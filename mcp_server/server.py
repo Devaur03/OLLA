@@ -1,28 +1,3 @@
-"""
-MCP Server for Hybrid Search Agents.
-
-How it works:
-- The MCP server exposes two tools: `web_search` and `semantic_search`
-- When called by an AI agent, it posts to the local FastAPI server
-- The FastAPI server runs the full pipeline and returns JSON
-- The MCP server returns the JSON string back to the agent
-
-To use with Claude Desktop:
-1. Start the FastAPI server: uvicorn app.main:app --port 8000
-2. Run this MCP server: python -m mcp_server.server
-3. Add to claude_desktop_config.json:
-
-{
-  "mcpServers": {
-    "hybrid-search": {
-      "command": "python",
-      "args": ["-m", "mcp_server.server"],
-      "cwd": "/absolute/path/to/hybrid-search-agents"
-    }
-  }
-}
-"""
-
 import asyncio
 import json
 import logging
