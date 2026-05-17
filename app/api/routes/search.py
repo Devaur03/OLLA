@@ -12,6 +12,8 @@ from app.services.chunk_service import ChunkService
 from app.services.rank_service import RankService
 from app.services.cache_service import CacheService
 from app.services.store_service import StoreService
+from app.services.credibility_service import CredibilityService
+from app.services.citation_service import CitationService
 from app.db.session import get_db_session
 
 logger = logging.getLogger(__name__)
@@ -87,7 +89,7 @@ async def search(
         clean_service = CleanService()
         chunk_service = ChunkService(
             chunk_size=request.chunk_size,
-            chunk_overlap=request.chunk_overlap,
+            overlap=request.chunk_overlap,
         )
 
         processed_results: list[ProcessedResult] = []
@@ -113,6 +115,16 @@ async def search(
         rank_service = RankService()
         ranked_results = rank_service.rank(request.query, processed_results)
 
+        # --- STEP 4.5: Apply Credibility Scoring ---
+        credibility_service = CredibilityService()
+        for result in ranked_results:
+            cred_score = credibility_service.score(result.url)
+            # final_score = (relevance * 0.7) + (credibility * 0.3)
+            result.score = round((result.score * 0.7) + (cred_score * 0.3), 4)
+            
+        # Re-sort after credibility adjustment
+        ranked_results = sorted(ranked_results, key=lambda r: r.score, reverse=True)
+
         # --- STEP 5: Build Final Results ---
         final_results: list[SearchResult] = []
         for rank_pos, result in enumerate(ranked_results, start=1):
@@ -131,6 +143,11 @@ async def search(
                 )
             )
 
+        # --- STEP 5.5: Generate Citations ---
+        citation_service = CitationService()
+        citations_markdown = citation_service.generate_citations_block(final_results)
+        citations_json = citation_service.generate_json_citations(final_results)
+
         elapsed_ms = int((time.monotonic() - start_time) * 1000)
 
         response = SearchResponse(
@@ -138,6 +155,8 @@ async def search(
             total_results=len(final_results),
             processing_time_ms=elapsed_ms,
             results=final_results,
+            citations_markdown=citations_markdown,
+            citations_json=citations_json,
         )
 
         # --- STEP 6: Store to DB (non-blocking, failure safe) ---

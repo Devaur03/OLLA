@@ -56,6 +56,8 @@ class SearchResponse(BaseModel):
     total_results: int
     processing_time_ms: int
     results: list[SearchResult]
+    citations_markdown: str = ""
+    citations_json: list[dict] = []
 
 
 class HealthResponse(BaseModel):
