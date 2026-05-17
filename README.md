@@ -52,3 +52,56 @@ tests/test_search_endpoint.py::test_search_returns_valid_structure PASSED [100%]
 
 ======================== 19 passed, 1 warning in 0.90s ========================
 ```
+
+### Verification Checklist
+We have explicitly verified all the requirements for Part 1:
+- [x] `GET /api/v1/health` returns `{"status": "ok"}`
+- [x] `POST /api/v1/search` with a valid query returns a JSON response
+- [x] Response contains `query`, `total_results`, `processing_time_ms`, `results`
+- [x] Each result contains `rank`, `title`, `url`, `content`, `chunks`, `score`
+- [x] Each chunk contains `chunk_id`, `text`, `char_count`
+- [x] Results are sorted by score descending (first result has highest score)
+- [x] Invalid queries (too short) return 422 Unprocessable Entity
+- [x] Unit tests pass for CleanService, ChunkService, RankService
+- [x] API docs render successfully at `http://localhost:8000/docs`
+- [x] `processing_time_ms` is under 5000 for a 3-result query (typically ~1500-3000ms with concurrent fetching)
+
+---
+
+### How to Test and Run the Application
+
+#### 1. Running the Test Suite
+To run the automated tests using `pytest` and see the complete output, use the following command:
+```bash
+python -m pytest -v
+```
+
+#### 2. Starting the API Server
+To start the FastAPI application locally on port 8000, run:
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+#### 3. Testing the Endpoints Manually
+Once the server is running, you can test the API endpoints using `curl` or by using the provided `smoke_test.py` script.
+
+**Check Health:**
+```bash
+curl http://localhost:8000/api/v1/health
+```
+
+**Perform a Search Query:**
+```bash
+curl -X POST http://localhost:8000/api/v1/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Python FastAPI tutorial", "max_results": 3, "chunk_size": 400, "chunk_overlap": 40}'
+```
+
+**Using the Smoke Test Script:**
+You can also run the pre-configured smoke test script to see a structured summary of the output:
+```bash
+python smoke_test.py
+```
+
+**Interactive API Documentation:**
+Navigate to [http://localhost:8000/docs](http://localhost:8000/docs) in your browser to test endpoints via the Swagger UI.
