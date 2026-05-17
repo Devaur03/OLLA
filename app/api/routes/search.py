@@ -66,7 +66,7 @@ async def search(request: SearchRequest):
         clean_service = CleanService()
         chunk_service = ChunkService(
             chunk_size=request.chunk_size,
-            chunk_overlap=request.chunk_overlap,
+            overlap=request.chunk_overlap,
         )
 
         processed_results: list[ProcessedResult] = []
