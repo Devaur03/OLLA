@@ -52,3 +52,11 @@ class SearchRequest(BaseModel):
             }
         }
     }
+
+
+class SemanticSearchRequest(BaseModel):
+    query: str = Field(..., min_length=3, max_length=500, description="Semantic search query")
+    top_k: int = Field(default=10, ge=1, le=50, description="Number of chunks to return")
+    min_similarity: float = Field(
+        default=0.6, ge=0.0, le=1.0, description="Minimum cosine similarity threshold"
+    )
