@@ -11,3 +11,4 @@ build/
 htmlcov/
 .coverage
 uv.lock
+.env.example
