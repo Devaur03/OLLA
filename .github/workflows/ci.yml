@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hybriddb_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx pytest-cov
+
+      - name: Run unit tests
+        run: pytest tests/unit/ -v --asyncio-mode=auto --tb=short
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5433/hybriddb_test
+          REDIS_URL: redis://localhost:6379
+          USE_LOCAL_EMBEDDINGS: "true"
+          REQUIRE_AUTH: "false"
+
+      - name: Run integration tests
+        run: pytest tests/integration/ -v --asyncio-mode=auto --tb=short -m integration || true
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5433/hybriddb_test
+          REDIS_URL: redis://localhost:6379
+          USE_LOCAL_EMBEDDINGS: "true"
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.11'
+        with:
+          fail_ci_if_error: false
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install lint tools
+        run: pip install black isort flake8 flake8-bugbear mypy
+
+      - name: black
+        run: black --check app/ tests/ cli.py
+
+      - name: isort
+        run: isort --check-only app/ tests/ cli.py
+
+      - name: flake8
+        run: flake8 app/ cli.py --max-line-length=100 --ignore=E203,W503
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t hybrid-search:${{ github.sha }} .
+
+      - name: Smoke test image
+        run: |
+          docker run -d --name hs-smoke             -e DATABASE_URL=postgresql+asyncpg://x:x@localhost/x             -e REDIS_URL=redis://localhost:6379             hybrid-search:${{ github.sha }} sh -c "python -c 'from app.main import app; print(app.title)'"
+          sleep 3
+          docker logs hs-smoke
