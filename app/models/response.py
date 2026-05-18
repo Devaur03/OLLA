@@ -60,8 +60,16 @@ class SearchResponse(BaseModel):
     citations_json: list[dict] = []
 
 
+class ComponentHealth(BaseModel):
+    """Health status of a single backing service."""
+    status: str          # "ok" | "slow" | "error"
+    latency_ms: float | None = None
+    error: str | None = None
+
+
 class HealthResponse(BaseModel):
-    """Health check response."""
-    status: str
+    """Deep health check response including per-component latency."""
+    status: str          # "ok" | "degraded"
     version: str
     service: str
+    components: dict[str, ComponentHealth] = {}

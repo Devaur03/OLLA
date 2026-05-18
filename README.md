@@ -1,12 +1,38 @@
-# Hybrid Search Agents
+# Hybrid Search for Agents
 
-> A production-ready web retrieval system for AI agents and RAG applications — built with FastAPI, PostgreSQL (pgvector), Redis, and local transformer embeddings. Exposes search as an MCP tool for Claude and other AI clients.
+**Self-hosted web search + semantic retrieval backend for AI agents and RAG pipelines.**
+
+Your AI agent asks a question. This system searches the web, fetches clean content, ranks it, stores it with vector embeddings, and returns structured results with citations — all in one API call. Works with Claude Desktop via MCP out of the box.
+
+```bash
+# Get from zero to first search result in under 5 minutes:
+git clone https://github.com/YOUR_USERNAME/hybrid-search-agents.git
+cd hybrid-search-agents
+make setup && make migrate && make dev
+
+# Then search:
+curl -X POST http://localhost:8000/api/v1/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "how does pgvector work"}'
+```
+
+Or open **http://localhost:8000/dashboard** in your browser.
 
 ---
 
-## Project Status: ✅ Complete
+**Why this exists:** Most RAG setups glue together 4–5 separate services manually. This gives you search → fetch → clean → chunk → rank → embed → cache as a single deployable stack with one `docker-compose up`.
 
-All five phases plus the Citation & Credibility bonus have been implemented and verified. The system is containerised and production-ready.
+**What you get:**
+- `POST /api/v1/search` — web search with ranking and citations (1–3s first call, <50ms cached)
+- `POST /api/v1/search/semantic` — vector similarity over your stored knowledge base
+- `/dashboard` — web UI to search, inspect results, and monitor system health
+- `hybrid-search "query"` — CLI for terminal-native access
+- Claude Desktop integration via MCP (stdio)
+
+**Stack:** FastAPI · PostgreSQL + pgvector · Redis · BAAI/bge-small-en-v1.5 (local, no API key) · Docker Compose
+
+→ **[QUICKSTART.md](QUICKSTART.md)** — step-by-step from clone to first result
+→ **[CONTRIBUTING.md](CONTRIBUTING.md)** — dev setup and contribution guide
 
 ---
 
