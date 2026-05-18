@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Paths that do not require authentication
-PUBLIC_PATHS = {"/api/v1/health", "/docs", "/redoc", "/openapi.json"}
+PUBLIC_PATHS = {"/api/v1/health", "/docs", "/redoc", "/openapi.json", "/dashboard"}
 
 
 class AuthMiddleware(BaseHTTPMiddleware):

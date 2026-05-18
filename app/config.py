@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     app_name: str = "Hybrid Search for Agents"
     app_version: str = "0.1.0"
     debug: bool = False
+    log_json: bool = False   # Set LOG_JSON=true in production for structured JSON logs
 
     # Search
     max_search_results: int = 5
@@ -22,22 +23,27 @@ class Settings(BaseSettings):
     # Fetch API
     fetch_base_url: str = "https://r.jina.ai"
 
-    # PostgreSQL
-    database_url: str = "postgresql+psycopg://postgres:password@localhost:5433/hybriddb"
-    database_echo: bool = False
+    # Search providers
+    brave_api_key: str = ""   # Optional fallback — https://brave.com/search/api/
 
-    # Redis (Phase 2B)
+    # PostgreSQL
+    database_url: str = "postgresql+asyncpg://postgres:password@localhost:5433/hybriddb"
+    database_echo: bool = False
+    db_pool_size: int = 10       # See .env.example for sizing guidance
+    db_max_overflow: int = 20
+
+    # Redis
     redis_url: str = "redis://localhost:6379"
     cache_ttl_seconds: int = 3600  # 1 hour
 
-    # Embeddings (Phase 3)
+    # Embeddings
     openai_api_key: Optional[str] = None
     embedding_model: str = "text-embedding-3-small"
     embedding_dimensions: int = 1536
-    use_local_embeddings: bool = False  # True = use BGE instead of OpenAI
+    use_local_embeddings: bool = True  # default: local BGE model, no API key needed
 
-    # Auth (Phase 5)
-    api_keys: str = ""  # Comma-separated list of valid API keys
+    # Auth
+    api_keys: str = ""
     require_auth: bool = False
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}

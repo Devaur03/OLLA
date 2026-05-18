@@ -1,16 +1,16 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.config import settings
 
-# Create async engine
+# Pool size is tunable via DB_POOL_SIZE / DB_MAX_OVERFLOW in .env
+# Dev/demo: 5/10  |  Staging: 10/20  |  Production: 20/40
 engine = create_async_engine(
     settings.database_url,
     echo=settings.database_echo,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,  # Verify connections before use
+    pool_size=settings.db_pool_size,
+    max_overflow=settings.db_max_overflow,
+    pool_pre_ping=True,
 )
 
-# Session factory
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
@@ -21,10 +21,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def get_db_session() -> AsyncSession:
-    """
-    FastAPI dependency that yields a database session.
-    Session is committed and closed after the request.
-    """
+    """FastAPI dependency: yields a DB session, commits on success, rolls back on error."""
     async with AsyncSessionLocal() as session:
         try:
             yield session

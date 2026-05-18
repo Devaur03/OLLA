@@ -1,4 +1,34 @@
-from pydantic import BaseModel, Field
+import re
+import unicodedata
+from pydantic import BaseModel, Field, field_validator
+
+
+def _sanitize_query(value: str) -> str:
+    """
+    Clean a raw query string:
+    - Strip leading/trailing whitespace
+    - Normalize Unicode to NFC (handles composed vs decomposed forms)
+    - Remove ASCII control characters (0x00–0x1F, 0x7F) except normal whitespace
+    - Collapse internal whitespace runs to a single space
+    - Reject strings that are purely punctuation / symbols after cleaning
+    """
+    # Normalize unicode
+    value = unicodedata.normalize("NFC", value).strip()
+
+    # Strip control characters (keep \t \n \r as they collapse to spaces next)
+    value = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", value)
+
+    # Collapse whitespace
+    value = re.sub(r"\s+", " ", value).strip()
+
+    # Reject if nothing meaningful remains (only punctuation/symbols)
+    if value and not re.search(r"[a-zA-Z0-9À-ɏ]", value):
+        raise ValueError(
+            "Query must contain at least one letter or number. "
+            "Queries made up entirely of punctuation or symbols are not supported."
+        )
+
+    return value
 
 
 class SearchRequest(BaseModel):
@@ -40,6 +70,11 @@ class SearchRequest(BaseModel):
         description="Minimum relevance score threshold (0.0 to 1.0)",
     )
 
+    @field_validator("query", mode="before")
+    @classmethod
+    def sanitize_query(cls, v: str) -> str:
+        return _sanitize_query(v)
+
     model_config = {
         "json_schema_extra": {
             "example": {
@@ -60,3 +95,8 @@ class SemanticSearchRequest(BaseModel):
     min_similarity: float = Field(
         default=0.6, ge=0.0, le=1.0, description="Minimum cosine similarity threshold"
     )
+
+    @field_validator("query", mode="before")
+    @classmethod
+    def sanitize_query(cls, v: str) -> str:
+        return _sanitize_query(v)
