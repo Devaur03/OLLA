@@ -4,17 +4,23 @@ from __future__ import annotations
 import asyncio
 import logging
 from typing import Optional
+from urllib.parse import urlparse
 
 from app.domain.interfaces.search_provider import SearchProvider, SearchCandidate
 from app.core.errors.exceptions import SearchProviderError, RateLimitError
 
 logger = logging.getLogger(__name__)
 
-BLOCKED_DOMAINS = [
-    "youtube.com", "youtu.be", "twitter.com", "x.com",
-    "instagram.com", "facebook.com", "tiktok.com",
-    "pinterest.com", "linkedin.com/in/",
-]
+# Hostnames whose pages are content-poor for RAG (social feeds, video players, etc.).
+# Matched against the URL *hostname* only, so searching FOR these sites still works.
+BLOCKED_HOSTNAMES = {
+    "youtube.com", "www.youtube.com", "youtu.be",
+    "twitter.com", "www.twitter.com", "x.com", "www.x.com",
+    "instagram.com", "www.instagram.com",
+    "facebook.com", "www.facebook.com", "m.facebook.com",
+    "tiktok.com", "www.tiktok.com",
+    "pinterest.com", "www.pinterest.com",
+}
 
 _MAX_ATTEMPTS = 3
 _BASE_DELAY = 1.5
@@ -105,7 +111,8 @@ class DuckDuckGoSearch(SearchProvider):
             url = item.get("href", "")
             if not url or not url.startswith(("http://", "https://")):
                 continue
-            if any(b in url for b in BLOCKED_DOMAINS):
+            hostname = urlparse(url).hostname or ""
+            if hostname in BLOCKED_HOSTNAMES:
                 continue
             out.append(SearchCandidate(
                 title=item.get("title", "Untitled"),
