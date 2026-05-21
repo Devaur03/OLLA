@@ -1,6 +1,32 @@
 import re
 import unicodedata
+from enum import Enum
 from pydantic import BaseModel, Field, field_validator
+
+
+class SafeSearchLevel(str, Enum):
+    """DuckDuckGo safe-search level. Maps directly to the ddgs `safesearch` arg."""
+
+    STRICT = "on"          # blocks adult content entirely
+    MODERATE = "moderate"  # filters explicit results (default)
+    OFF = "off"            # no filtering — maximum crawl coverage
+
+
+class TimeLimit(str, Enum):
+    """DuckDuckGo time filter. Maps directly to the ddgs `timelimit` arg."""
+
+    DAY = "d"
+    WEEK = "w"
+    MONTH = "m"
+    YEAR = "y"
+
+
+# Friendly region aliases → DuckDuckGo region codes.
+REGION_ALIASES: dict[str, str] = {
+    "wt": "wt-wt", "world": "wt-wt", "wt-wt": "wt-wt",
+    "in": "in-en", "us": "us-en", "uk": "uk-en",
+    "ca": "ca-en", "au": "au-en", "de": "de-de", "fr": "fr-fr",
+}
 
 
 def _sanitize_query(value: str) -> str:
@@ -69,11 +95,30 @@ class SearchRequest(BaseModel):
         le=1.0,
         description="Minimum relevance score threshold (0.0 to 1.0)",
     )
+    safesearch: SafeSearchLevel = Field(
+        default=SafeSearchLevel.MODERATE,
+        description="Adult-content filter level: 'on', 'moderate', or 'off'",
+    )
+    timelimit: TimeLimit | None = Field(
+        default=None,
+        description="Restrict results by recency: 'd' (day), 'w', 'm', or 'y'",
+    )
+    region: str = Field(
+        default="wt-wt",
+        description="DuckDuckGo region code or alias (e.g. 'wt-wt', 'us', 'in')",
+    )
 
     @field_validator("query", mode="before")
     @classmethod
     def sanitize_query(cls, v: str) -> str:
         return _sanitize_query(v)
+
+    @field_validator("region", mode="before")
+    @classmethod
+    def normalize_region(cls, v: str) -> str:
+        if not v:
+            return "wt-wt"
+        return REGION_ALIASES.get(str(v).strip().lower(), str(v).strip().lower())
 
     model_config = {
         "json_schema_extra": {
@@ -84,6 +129,9 @@ class SearchRequest(BaseModel):
                 "chunk_size": 500,
                 "chunk_overlap": 50,
                 "min_score": 0.0,
+                "safesearch": "moderate",
+                "timelimit": None,
+                "region": "wt-wt",
             }
         }
     }
@@ -94,6 +142,23 @@ class SemanticSearchRequest(BaseModel):
     top_k: int = Field(default=10, ge=1, le=50, description="Number of chunks to return")
     min_similarity: float = Field(
         default=0.6, ge=0.0, le=1.0, description="Minimum cosine similarity threshold"
+    )
+
+    @field_validator("query", mode="before")
+    @classmethod
+    def sanitize_query(cls, v: str) -> str:
+        return _sanitize_query(v)
+
+
+class GraphSearchRequest(BaseModel):
+    """Multi-hop knowledge-graph retrieval request."""
+
+    query: str = Field(..., min_length=3, max_length=500, description="Graph search query")
+    hops: int = Field(default=2, ge=1, le=4, description="Number of edges to traverse")
+    seed_k: int = Field(default=5, ge=1, le=20, description="Seed chunks via vector similarity")
+    top_k: int = Field(default=20, ge=1, le=100, description="Max chunks to return")
+    min_similarity: float = Field(
+        default=0.6, ge=0.0, le=1.0, description="Minimum seed cosine similarity"
     )
 
     @field_validator("query", mode="before")

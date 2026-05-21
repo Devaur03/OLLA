@@ -2,8 +2,12 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Integer, Float, DateTime, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
 from app.models.db.base import Base
 
+if TYPE_CHECKING:
+    from app.models.db.query import StoredQuery
+    from app.models.db.chunk import StoredChunk
 
 class StoredResult(Base):
     """Persisted search result linked to a query."""

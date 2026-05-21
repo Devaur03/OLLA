@@ -9,10 +9,12 @@ class SearchCandidate(BaseModel):
 
 
 class FetchedPage(BaseModel):
-    """Raw page content returned by Jina Reader."""
+    """Raw page content returned by the fetch waterfall."""
     title: str
     url: str
     raw_content: str
+    # Which method produced the content: 'jina' | 'direct' | 'snippet'.
+    fetch_method: str = "jina"
 
 
 class CleanedPage(BaseModel):
@@ -27,6 +29,8 @@ class ContentChunk(BaseModel):
     chunk_id: int
     text: str
     char_count: int
+    # Named entities extracted from the chunk (optional — empty if spaCy absent).
+    entities: list[dict] = []
 
 
 class ProcessedResult(BaseModel):
@@ -50,6 +54,14 @@ class SearchResult(BaseModel):
     chunk_count: int
 
 
+class StageTrace(BaseModel):
+    """Observability record for one pipeline stage."""
+    stage: str
+    status: str           # 'success' | 'failed' | 'fallback' | 'skipped'
+    duration_ms: int
+    detail: str = ""
+
+
 class SearchResponse(BaseModel):
     """The complete structured response returned to the client."""
     query: str
@@ -58,18 +70,23 @@ class SearchResponse(BaseModel):
     results: list[SearchResult]
     citations_markdown: str = ""
     citations_json: list[dict] = []
+    cache_hit: bool = False
+    # True when one or more non-fatal stages failed but the search still returned.
+    degraded: bool = False
+    # Per-stage timing/status for dashboard + debugging.
+    trace: list[StageTrace] = []
 
 
 class ComponentHealth(BaseModel):
     """Health status of a single backing service."""
-    status: str          # "ok" | "slow" | "error"
+    status: str
     latency_ms: float | None = None
     error: str | None = None
 
 
 class HealthResponse(BaseModel):
     """Deep health check response including per-component latency."""
-    status: str          # "ok" | "degraded"
+    status: str
     version: str
     service: str
-    components: dict[str, ComponentHealth] = {}
+    components: dict

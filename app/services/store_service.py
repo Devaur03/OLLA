@@ -84,6 +84,10 @@ class StoreService:
                         chunk_id=chunk.chunk_id,
                         text=chunk.text,
                         char_count=chunk.char_count,
+                        # New chunks start in short-term memory at default
+                        # confidence; entities are populated when spaCy is on.
+                        memory_tier="stm",
+                        entities=getattr(chunk, "entities", []) or [],
                     )
                     self.db.add(stored_chunk)
 

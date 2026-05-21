@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     app_name: str = "Hybrid Search for Agents"
     app_version: str = "0.1.0"
     debug: bool = False
-    log_json: bool = False   # Set LOG_JSON=true in production for structured JSON logs
+    log_json: bool = False
 
     # Search
     max_search_results: int = 5
@@ -22,29 +22,62 @@ class Settings(BaseSettings):
 
     # Fetch API
     fetch_base_url: str = "https://r.jina.ai"
+    jina_api_key: str = ""                 # optional — higher Jina rate limits
 
     # Search providers
-    brave_api_key: str = ""   # Optional fallback — https://brave.com/search/api/
+    brave_api_key: str = ""
+    ddg_backends: str = "auto,html,lite"   # ordered DDG backend fallback chain
+    default_safesearch: str = "moderate"   # on | moderate | off
+    default_region: str = "wt-wt"
+    proxy_pool: str = ""                   # comma-separated http(s) proxy URLs
+
+    # Pipeline behaviour
+    enable_sanitization: bool = True       # strip prompt-injection from scraped text
+    enable_entity_extraction: bool = False  # spaCy NER on chunks (needs en_core_web_sm)
+    enable_knowledge_graph: bool = True    # build chunk_edges after embedding
+
+    # Memory tiers / confidence
+    confidence_default: float = 0.5
+    ltm_confidence_threshold: float = 0.7  # promote STM -> LTM at/above this
+    ltm_retrieval_threshold: int = 3       # ...and at/above this retrieval count
+    stm_prune_confidence: float = 0.3      # prune STM below this confidence
+    stm_prune_age_days: int = 30
+
+    # Knowledge graph
+    graph_similarity_threshold: float = 0.85  # min cosine sim to draw a chunk edge
+    graph_max_edges_per_chunk: int = 10
 
     # PostgreSQL
     database_url: str = "postgresql+asyncpg://postgres:password@localhost:5433/hybriddb"
     database_echo: bool = False
-    db_pool_size: int = 10       # See .env.example for sizing guidance
+    db_pool_size: int = 10
     db_max_overflow: int = 20
 
     # Redis
     redis_url: str = "redis://localhost:6379"
-    cache_ttl_seconds: int = 3600  # 1 hour
+    cache_ttl_seconds: int = 3600
 
     # Embeddings
     openai_api_key: Optional[str] = None
     embedding_model: str = "text-embedding-3-small"
     embedding_dimensions: int = 1536
-    use_local_embeddings: bool = True  # default: local BGE model, no API key needed
+    use_local_embeddings: bool = True
 
     # Auth
     api_keys: str = ""
     require_auth: bool = False
+
+    # Deployment
+    app_base_url: str = "http://localhost:8000"
+
+    # Stripe (set in Railway / Render dashboard — never commit)
+    stripe_secret_key:      str = ""
+    stripe_webhook_secret:  str = ""
+    stripe_publishable_key: str = ""
+    stripe_price_starter:   str = ""
+    stripe_price_pro:       str = ""
+    stripe_price_team:      str = ""
+    stripe_price_enterprise: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

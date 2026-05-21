@@ -4,9 +4,11 @@ from alembic import context
 
 # Import all models so Alembic can detect them
 from app.models.db.base import Base
-from app.models.db.query import StoredQuery     # noqa: F401
-from app.models.db.result import StoredResult   # noqa: F401
-from app.models.db.chunk import StoredChunk     # noqa: F401
+from app.models.db.query import StoredQuery       # noqa: F401
+from app.models.db.result import StoredResult     # noqa: F401
+from app.models.db.chunk import StoredChunk       # noqa: F401
+from app.models.db.chunk_edge import ChunkEdge    # noqa: F401
+from app.models.db.agent_trace import AgentTrace  # noqa: F401
 from app.config import settings
 
 config = context.config
