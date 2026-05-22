@@ -2,28 +2,38 @@
 PURPOSE: Resilient web search.
 
 Strategy (inspired by COMPARISON_README §4–5):
-  1. DuckDuckGo with multi-backend fallback — try each backend in order
-     ("auto" → "html" → "lite"). The "lite" endpoint in particular bypasses
-     much of DuckDuckGo's bot detection.
+  1. Uses the maintained `ddgs` package (the successor to `duckduckgo_search`,
+     which is deprecated and whose HTML/lite parsers now return nothing).
+     `ddgs` with backend="auto" internally rotates real search engines
+     (Google, Bing, DuckDuckGo, Brave, Mojeek, …) so it is far more reliable.
+     If `ddgs` is not installed, it falls back to `duckduckgo_search`.
   2. Each backend gets retry-with-backoff on rate-limit errors.
-  3. Brave Search is used as a final provider fallback when DDG is exhausted
+  3. Brave Search is used as a final provider fallback when search is exhausted
      (only if BRAVE_API_KEY is set).
-  4. Optional proxy rotation when DDG rate-limits the server IP entirely.
+  4. Optional proxy rotation when the search engine rate-limits the server IP.
 
-Safe-search, time-limit and region are first-class parameters so callers can
-control crawl coverage and recency.
+Safe-search, time-limit and region are first-class parameters.
 """
 
 import asyncio
 import logging
 import random
+import re
 
 import httpx
-from duckduckgo_search import DDGS
 
 from app.config import settings
 from app.models.request import SafeSearchLevel, TimeLimit
 from app.models.response import SearchCandidate
+
+# Prefer the maintained `ddgs` package; fall back to the deprecated one.
+# Kept directly after the imports above so it is not flagged as a late import.
+try:
+    from ddgs import DDGS  # type: ignore
+    _SEARCH_PKG = "ddgs"
+except ImportError:  # pragma: no cover
+    from duckduckgo_search import DDGS  # type: ignore
+    _SEARCH_PKG = "duckduckgo_search"
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +60,7 @@ def _random_proxy() -> str | None:
 
 class SearchService:
     """
-    Resilient web search with multi-backend DuckDuckGo + Brave fallback.
+    Resilient web search via `ddgs` (multi-engine) + Brave fallback.
 
     Args:
         max_results: default maximum candidates returned per search.
@@ -58,9 +68,15 @@ class SearchService:
 
     def __init__(self, max_results: int = 5):
         self.max_results = max_results
-        self.backends = [
-            b.strip() for b in settings.ddg_backends.split(",") if b.strip()
-        ] or ["auto"]
+        if _SEARCH_PKG == "ddgs":
+            # `ddgs` "auto" already rotates real engines internally; a single
+            # pass is enough. We still keep an explicit-engine retry below.
+            self.backends = ["auto"]
+        else:
+            self.backends = [
+                b.strip() for b in settings.ddg_backends.split(",") if b.strip()
+            ] or ["auto"]
+        logger.info("SearchService: using %s package", _SEARCH_PKG)
 
     async def search(
         self,
@@ -72,7 +88,7 @@ class SearchService:
         """
         Run a resilient search. Returns a filtered list of candidate URLs.
 
-        Falls back: DDG backends → Brave → empty list.
+        Falls back: primary engine(s) → query-normalized retry → Brave → [].
         """
         safe_val = safesearch.value if isinstance(safesearch, SafeSearchLevel) else str(safesearch)
         time_val = timelimit.value if isinstance(timelimit, TimeLimit) else timelimit
@@ -81,9 +97,19 @@ class SearchService:
         if candidates:
             return candidates
 
+        # Zero-result robustness: a query like "amazon .com" (stray spaces
+        # around a dot) is treated as a different query than "amazon.com".
+        # Retry once with spaces around dots collapsed.
+        alt = re.sub(r"\s*\.\s*", ".", query).strip()
+        if alt and alt != query:
+            logger.info("SearchService: 0 results for %r — retrying as %r", query, alt)
+            candidates = await self._search_ddg(alt, safe_val, time_val, region)
+            if candidates:
+                return candidates
+
         if settings.brave_api_key:
             logger.warning(
-                "SearchService: all DDG backends exhausted — falling back to Brave Search."
+                "SearchService: web search exhausted — falling back to Brave Search."
             )
             candidates = await self._search_brave(query)
             if candidates:
@@ -91,8 +117,9 @@ class SearchService:
             logger.error("SearchService: Brave Search also failed.")
         else:
             logger.error(
-                "SearchService: DuckDuckGo failed on every backend and no Brave "
-                "fallback is configured. Set BRAVE_API_KEY in .env."
+                "SearchService: web search returned nothing and no Brave fallback "
+                "is configured. If this persists, `pip install -U ddgs` or set "
+                "BRAVE_API_KEY in .env."
             )
         return []
 
@@ -101,7 +128,7 @@ class SearchService:
     async def _search_ddg(
         self, query: str, safesearch: str, timelimit: str | None, region: str
     ) -> list[SearchCandidate]:
-        """Try each DDG backend in order; first one that yields results wins."""
+        """Try each configured backend in order; first one with results wins."""
         for backend in self.backends:
             raw = await self._search_one_backend(
                 query, safesearch, timelimit, region, backend
@@ -109,12 +136,12 @@ class SearchService:
             candidates = self._filter_candidates(raw)
             if candidates:
                 logger.info(
-                    "SearchService [DDG/%s]: %d candidates for %r",
-                    backend, len(candidates), query,
+                    "SearchService [%s/%s]: %d candidates for %r",
+                    _SEARCH_PKG, backend, len(candidates), query,
                 )
                 return candidates
             logger.warning(
-                "SearchService [DDG/%s]: no usable results — trying next backend.", backend
+                "SearchService [%s/%s]: no usable results.", _SEARCH_PKG, backend
             )
         return []
 
@@ -141,7 +168,7 @@ class SearchService:
                 if attempt < _DDG_MAX_ATTEMPTS:
                     wait = min(delay, _DDG_MAX_DELAY)
                     logger.warning(
-                        "SearchService [DDG/%s]: %s (attempt %d/%d). Retrying in %.1fs.",
+                        "SearchService [%s]: %s (attempt %d/%d). Retrying in %.1fs.",
                         backend, "rate limit" if is_rate else exc,
                         attempt, _DDG_MAX_ATTEMPTS, wait,
                     )
@@ -149,7 +176,7 @@ class SearchService:
                     delay *= 2
                 else:
                     logger.error(
-                        "SearchService [DDG/%s]: failed after %d attempts: %s",
+                        "SearchService [%s]: failed after %d attempts: %s",
                         backend, _DDG_MAX_ATTEMPTS, exc,
                     )
         return []
@@ -158,22 +185,37 @@ class SearchService:
         self, query: str, fetch_count: int, safesearch: str,
         timelimit: str | None, region: str, backend: str,
     ) -> list[dict]:
-        """Blocking DDG call — always run inside a thread-pool executor."""
+        """
+        Blocking search call — always run inside a thread-pool executor.
+
+        Tolerates API differences between `ddgs` and `duckduckgo_search`: if a
+        keyword argument is rejected, it retries with a reduced argument set.
+        """
         proxy = _random_proxy()
         ddgs_kwargs: dict = {}
         if proxy:
             ddgs_kwargs["proxy"] = proxy
-        with DDGS(**ddgs_kwargs) as ddgs:
-            return list(
-                ddgs.text(
-                    query,
-                    region=region,
-                    safesearch=safesearch,
-                    timelimit=timelimit,
-                    max_results=fetch_count,
-                    backend=backend,
-                )
-            )
+
+        text_kwargs: dict = {
+            "region": region,
+            "safesearch": safesearch,
+            "timelimit": timelimit,
+            "max_results": fetch_count,
+            "backend": backend,
+        }
+        try:
+            with DDGS(**ddgs_kwargs) as ddgs:
+                return list(ddgs.text(query, **text_kwargs))
+        except TypeError:
+            # A kwarg (often `backend`) is not supported by this version —
+            # drop the optional ones and retry with the essentials.
+            text_kwargs.pop("backend", None)
+            try:
+                with DDGS(**ddgs_kwargs) as ddgs:
+                    return list(ddgs.text(query, **text_kwargs))
+            except TypeError:
+                with DDGS(**ddgs_kwargs) as ddgs:
+                    return list(ddgs.text(query, max_results=fetch_count))
 
     # ---------------------------------------------------------------- Brave
 
@@ -235,7 +277,7 @@ class SearchService:
     def _filter_candidates(self, raw_results: list[dict]) -> list[SearchCandidate]:
         candidates: list[SearchCandidate] = []
         for result in raw_results:
-            # DDG result dicts use 'href'/'body'; some backends use 'url'.
+            # ddgs/duckduckgo_search use 'href'/'body'; some return 'url'.
             url = result.get("href") or result.get("url", "")
             if not self._is_valid_url(url):
                 continue

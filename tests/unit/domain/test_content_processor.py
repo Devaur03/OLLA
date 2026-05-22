@@ -1,83 +1,40 @@
 """
-Unit tests for ContentProcessor.
+Unit tests for content processing — CleanService and ChunkService.
 
-Pure domain logic — no external dependencies, no async.
+(File kept under its original path; it now covers the live services that
+replaced the archived ContentProcessor.)
 """
-import pytest
-from app.domain.services.content_processor import ContentProcessor
+from app.services.chunk_service import ChunkService
+from app.services.clean_service import CleanService
 
 
-@pytest.fixture
-def proc():
-    return ContentProcessor(chunk_size=200, overlap=20)
+def test_clean_strips_markdown_syntax():
+    cleaned = CleanService().clean(
+        "# Heading\n\n**Bold** and *italic* with a [link](http://x.com).\n\n```code```"
+    )
+    assert "#" not in cleaned
+    assert "**" not in cleaned
+    assert "```" not in cleaned
+    assert "link" in cleaned  # anchor text is kept
 
 
-class TestClean:
-    def test_removes_markdown_headers(self, proc):
-        cleaned, _ = proc.process("## Hello World\nSome content here.")
-        assert "##" not in cleaned
-        assert "Hello World" in cleaned
-
-    def test_removes_image_tags(self, proc):
-        cleaned, _ = proc.process("Text before ![alt](http://img.com/pic.jpg) text after.")
-        assert "![" not in cleaned
-        assert "Text before" in cleaned
-
-    def test_unwraps_links_keeping_text(self, proc):
-        cleaned, _ = proc.process("Read [this article](https://example.com) for info.")
-        assert "](https://example.com)" not in cleaned
-        assert "this article" in cleaned
-
-    def test_removes_fenced_code_blocks(self, proc):
-        cleaned, _ = proc.process("Intro.\n```python\nprint('hi')\n```\nEnd.")
-        assert "```" not in cleaned
-        assert "Intro" in cleaned
-        assert "End" in cleaned
-
-    def test_collapses_excess_newlines(self, proc):
-        cleaned, _ = proc.process("Line one\n\n\n\n\nLine two")
-        assert "\n\n\n" not in cleaned
-
-    def test_empty_input_returns_empty(self, proc):
-        cleaned, chunks = proc.process("")
-        assert cleaned == ""
-        assert chunks == []
-
-    def test_whitespace_only_returns_empty(self, proc):
-        cleaned, chunks = proc.process("   \n\n  ")
-        assert cleaned == ""
-        assert chunks == []
+def test_clean_empty_input_returns_empty():
+    assert CleanService().clean("") == ""
+    assert CleanService().clean("   ") == ""
 
 
-class TestChunk:
-    def test_short_text_produces_single_chunk(self, proc):
-        _, chunks = proc.process("Short text.")
-        assert len(chunks) == 1
-        assert chunks[0].text == "Short text."
+def test_chunk_splits_long_text_with_sequential_ids():
+    text = ("Sentence about vector search and retrieval pipelines. " * 60).strip()
+    chunks = ChunkService(chunk_size=200, overlap=30).chunk(text)
+    assert len(chunks) > 1
+    assert [c.chunk_id for c in chunks] == list(range(len(chunks)))
 
-    def test_long_text_produces_multiple_chunks(self, proc):
-        # Use multi-paragraph input so the paragraph-boundary splitter activates
-        paragraphs = ["This is a sentence that fills a paragraph. " * 3 for _ in range(6)]
-        text = "\n\n".join(paragraphs)
-        _, chunks = proc.process(text)
-        assert len(chunks) > 1
 
-    def test_chunk_ids_are_sequential(self, proc):
-        text = "\n\n".join(["Paragraph " + str(i) + ". " * 15 for i in range(8)])
-        _, chunks = proc.process(text)
-        for i, chunk in enumerate(chunks):
-            assert chunk.chunk_id == i
+def test_chunk_short_text_is_single_chunk():
+    chunks = ChunkService(chunk_size=500, overlap=50).chunk("short text")
+    assert len(chunks) == 1
+    assert chunks[0].text == "short text"
 
-    def test_char_count_matches_text_length(self, proc):
-        text = "\n\n".join(["Word " * 25 for _ in range(5)])
-        _, chunks = proc.process(text)
-        for chunk in chunks:
-            assert chunk.char_count == len(chunk.text)
 
-    def test_no_chunk_exceeds_chunk_size_significantly(self, proc):
-        # Use paragraphs whose individual length stays near chunk_size
-        text = "\n\n".join(["Word " * 30 for _ in range(6)])  # ~150 chars each
-        _, chunks = proc.process(text)
-        # No assembled chunk should be more than 3x chunk_size
-        for chunk in chunks:
-            assert chunk.char_count <= proc.chunk_size * 3
+def test_chunk_empty_text_returns_empty():
+    assert ChunkService().chunk("") == []

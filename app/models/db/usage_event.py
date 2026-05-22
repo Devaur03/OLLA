@@ -1,9 +1,16 @@
 """SQLAlchemy ORM model for the usage_events table."""
 import uuid
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
+
 from sqlalchemy import String, Boolean, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.models.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.db.api_key import ApiKey
+    from app.models.db.user import User
 
 
 class UsageEvent(Base):

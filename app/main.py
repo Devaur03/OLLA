@@ -68,6 +68,7 @@ def create_app() -> FastAPI:
     app.include_router(graph.router,    prefix="/api/v1")
     app.include_router(keys.router)       # prefix defined in router: /api/v1/keys
     app.include_router(billing.router)    # prefix defined in router: /api/v1/billing
+    app.include_router(dashboard.router)  # legacy self-contained UI at /dashboard
 
     # Mount static files and SPA route if frontend/dist exists
     frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")

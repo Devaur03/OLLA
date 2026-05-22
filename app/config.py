@@ -47,6 +47,16 @@ class Settings(BaseSettings):
     graph_similarity_threshold: float = 0.85  # min cosine sim to draw a chunk edge
     graph_max_edges_per_chunk: int = 10
 
+    # RAG answer synthesis (local LLM via Ollama)
+    enable_answer_synthesis: bool = True
+    ollama_base_url: str = "http://localhost:11434"
+    # llama3.2:1b — small + fast on CPU (the 3B model times out on modest
+    # hardware). Override with OLLAMA_MODEL in .env (e.g. qwen2.5:1.5b).
+    ollama_model: str = "llama3.2:1b"
+    ollama_timeout: float = 150.0          # read timeout (connect is fixed at 5s)
+    ollama_num_predict: int = 512          # cap on answer length (tokens)
+    answer_max_context_chars: int = 3000   # total source text fed to the LLM
+
     # PostgreSQL
     database_url: str = "postgresql+asyncpg://postgres:password@localhost:5433/hybriddb"
     database_echo: bool = False

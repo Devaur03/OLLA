@@ -1,0 +1,32 @@
+# Keep the Docker build context small and secret-free.
+.git
+.github
+.gitignore
+.venv
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
+
+# Front-end build inputs (only the built dist is needed, if at all)
+frontend/node_modules
+frontend/src
+
+# Docs, tests, archives, scratch — not needed in the runtime image
+docs
+tests
+archive
+logs
+*.md
+result.md
+smoke_test.py
+scripts

@@ -1,9 +1,16 @@
 """SQLAlchemy ORM model for the api_keys table."""
 import uuid
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
+
 from sqlalchemy import String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.models.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.db.usage_event import UsageEvent
+    from app.models.db.user import User
 
 
 class ApiKey(Base):

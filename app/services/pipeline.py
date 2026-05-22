@@ -30,6 +30,7 @@ from app.models.request import SearchRequest
 from app.models.response import (
     ProcessedResult, SearchResponse, SearchResult, StageTrace,
 )
+from app.services.answer_service import AnswerService
 from app.services.cache_service import CacheService
 from app.services.chunk_service import ChunkService
 from app.services.citation_service import CitationService
@@ -217,6 +218,19 @@ class SearchPipeline:
         citations_md = citation_service.generate_citations_block(final_results)
         citations_json = citation_service.generate_json_citations(final_results)
 
+        # --- STAGE: answer (RAG synthesis, non-fatal) ----------------------
+        answer_text = ""
+        answer_model = ""
+        with self._stage("answer") as span:
+            answer_result = await AnswerService().synthesize(request.query, final_results)
+            if answer_result.ok:
+                answer_text = answer_result.answer
+                answer_model = answer_result.model
+                span["detail"] = f"{len(answer_text)} chars via {answer_model}"
+            else:
+                span["status"] = "skipped"
+                span["detail"] = answer_result.error or "no answer produced"
+
         elapsed_ms = int((time.monotonic() - start) * 1000)
         response = SearchResponse(
             query=request.query,
@@ -227,6 +241,8 @@ class SearchPipeline:
             citations_json=citations_json,
             degraded=self.degraded,
             trace=self.traces,
+            answer=answer_text,
+            answer_model=answer_model,
         )
 
         # --- STAGE: store (non-fatal) -------------------------------------

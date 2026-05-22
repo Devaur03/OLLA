@@ -9,10 +9,9 @@ Usage:
     breaker = CircuitBreaker(failure_threshold=5, recovery_timeout=60)
     result = await breaker.call(my_async_func, arg1, arg2)
 """
-import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Callable, Any
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +64,7 @@ class CircuitBreaker:
             result = await func(*args, **kwargs)
             self._on_success()
             return result
-        except self.expected_exception as exc:
+        except self.expected_exception:
             self._on_failure()
             raise
 

@@ -2,8 +2,8 @@ import hashlib
 import json
 import logging
 import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.models.db.query import StoredQuery
 from app.models.db.result import StoredResult

@@ -1,10 +1,13 @@
 """
 Route integration test — ASGI in-process, SQLite + fakeredis.
-Run:  python3 test_routes.py
+Run from the repo root:  python scripts/test_routes.py
 """
 import asyncio, json, os, sys, time
 from dataclasses import dataclass
 from typing import Any
+
+# This script lives in scripts/ — put the repo root on sys.path so `app` imports.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 SQLITE_URL = "sqlite+aiosqlite:///:memory:"
 

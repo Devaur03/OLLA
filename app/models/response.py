@@ -75,6 +75,10 @@ class SearchResponse(BaseModel):
     degraded: bool = False
     # Per-stage timing/status for dashboard + debugging.
     trace: list[StageTrace] = []
+    # RAG-synthesized natural-language answer with inline [n] citations.
+    answer: str = ""
+    # Which local LLM produced the answer (empty if synthesis was skipped/failed).
+    answer_model: str = ""
 
 
 class ComponentHealth(BaseModel):
