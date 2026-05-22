@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hybriddb_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx pytest-cov
+
+      - name: Run unit tests
+        run: |
+          export DATABASE_URL="postgresql+asyncpg://${DB_USER}:${DB_PASS}@localhost:5433/${DB_NAME}"
+          pytest tests/unit/ -v --tb=short
+        env:
+          DB_USER: postgres
+          DB_PASS: postgres
+          DB_NAME: hybriddb_test
+          REDIS_URL: redis://localhost:6379
+          USE_LOCAL_EMBEDDINGS: "true"
+          REQUIRE_AUTH: "false"
+          ENABLE_ANSWER_SYNTHESIS: "false"
+
+      - name: Run integration tests
+        run: |
+          export DATABASE_URL="postgresql+asyncpg://${DB_USER}:${DB_PASS}@localhost:5433/${DB_NAME}"
+          pytest tests/integration/ -v --tb=short -m integration || true
+        env:
+          DB_USER: postgres
+          DB_PASS: postgres
+          DB_NAME: hybriddb_test
+          REDIS_URL: redis://localhost:6379
+          USE_LOCAL_EMBEDDINGS: "true"
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        if: matrix.python-version == '3.11'
+        with:
+          fail_ci_if_error: false
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Ruff lint
+        run: ruff check app/ cli.py tests/
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build image
+        run: docker build -f docker/Dockerfile -t hybrid-search:${{ github.sha }} .
+
+      - name: Smoke test image
+        run: |
+          export DATABASE_URL="postgresql+asyncpg://${DB_USER}:${DB_PASS}@localhost/${DB_NAME}"
+          docker run --rm \
+            -e DATABASE_URL="$DATABASE_URL" \
+            -e REDIS_URL=redis://localhost:6379 \
+            hybrid-search:${{ github.sha }} \
+            python -c "from app.main import app; print(app.title)"
+        env:
+          DB_USER: x
+          DB_PASS: x
+          DB_NAME: x

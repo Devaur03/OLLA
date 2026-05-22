@@ -22,6 +22,10 @@ distro==1.9.0
 
 duckduckgo-search==8.1.1
 
+ddgs>=9.0.0
+
+email-validator==2.1.1
+
 fastapi==0.136.1
 
 filelock==3.29.0
@@ -171,3 +175,4 @@ watchfiles==1.1.1
 
 websockets==16.0
 
+stripe==10.12.0

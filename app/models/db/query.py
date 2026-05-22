@@ -2,8 +2,11 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Integer, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
 from app.models.db.base import Base
 
+if TYPE_CHECKING:
+    from app.models.db.result import StoredResult
 
 class StoredQuery(Base):
     """Persisted search query with metadata."""

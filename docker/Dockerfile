@@ -14,10 +14,11 @@ RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code. Config comes from environment variables (not a
+# committed .env file) — keeps secrets out of the image and the build robust.
 COPY app/ ./app/
 COPY mcp_server/ ./mcp_server/
-COPY .env .env
+COPY cli.py ./cli.py
 
 EXPOSE 8000
 

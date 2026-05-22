@@ -13,3 +13,4 @@ htmlcov/
 uv.lock
 .env.example
 archive/
+logs/
