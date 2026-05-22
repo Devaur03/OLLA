@@ -54,18 +54,26 @@ jobs:
           pip install pytest pytest-asyncio httpx pytest-cov
 
       - name: Run unit tests
-        run: pytest tests/unit/ -v --tb=short
+        run: |
+          export DATABASE_URL="postgresql+asyncpg://${DB_USER}:${DB_PASS}@localhost:5433/${DB_NAME}"
+          pytest tests/unit/ -v --tb=short
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5433/hybriddb_test
+          DB_USER: postgres
+          DB_PASS: postgres
+          DB_NAME: hybriddb_test
           REDIS_URL: redis://localhost:6379
           USE_LOCAL_EMBEDDINGS: "true"
           REQUIRE_AUTH: "false"
           ENABLE_ANSWER_SYNTHESIS: "false"
 
       - name: Run integration tests
-        run: pytest tests/integration/ -v --tb=short -m integration || true
+        run: |
+          export DATABASE_URL="postgresql+asyncpg://${DB_USER}:${DB_PASS}@localhost:5433/${DB_NAME}"
+          pytest tests/integration/ -v --tb=short -m integration || true
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5433/hybriddb_test
+          DB_USER: postgres
+          DB_PASS: postgres
+          DB_NAME: hybriddb_test
           REDIS_URL: redis://localhost:6379
           USE_LOCAL_EMBEDDINGS: "true"
 
@@ -104,8 +112,13 @@ jobs:
 
       - name: Smoke test image
         run: |
+          export DATABASE_URL="postgresql+asyncpg://${DB_USER}:${DB_PASS}@localhost/${DB_NAME}"
           docker run --rm \
-            -e DATABASE_URL=postgresql+asyncpg://x:x@localhost/x \
+            -e DATABASE_URL="$DATABASE_URL" \
             -e REDIS_URL=redis://localhost:6379 \
             hybrid-search:${{ github.sha }} \
             python -c "from app.main import app; print(app.title)"
+        env:
+          DB_USER: x
+          DB_PASS: x
+          DB_NAME: x
