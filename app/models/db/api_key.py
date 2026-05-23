@@ -21,6 +21,8 @@ class ApiKey(Base):
     key_hash:   Mapped[str]  = mapped_column(String(64),  unique=True, nullable=False)
     key_prefix: Mapped[str]  = mapped_column(String(20),  nullable=False)
     name:       Mapped[str]  = mapped_column(String(255), nullable=False, default="Default key")
+    # RBAC (migration 006): 'admin' | 'member'. Gates the /admin/* endpoints.
+    role:       Mapped[str]  = mapped_column(String(20), nullable=False, default="member")
     is_active:  Mapped[bool] = mapped_column(Boolean(), nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

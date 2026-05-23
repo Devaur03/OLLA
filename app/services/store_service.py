@@ -5,10 +5,12 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models.db.query import StoredQuery
 from app.models.db.result import StoredResult
 from app.models.db.chunk import StoredChunk
 from app.models.response import SearchResult
+from app.services.chunk_service import ChunkService
 
 logger = logging.getLogger(__name__)
 
@@ -77,19 +79,25 @@ class StoreService:
                 )
                 self.db.add(stored_result)
 
-                for chunk in result.chunks:
-                    stored_chunk = StoredChunk(
-                        id=str(uuid.uuid4()),
-                        result_id=result_id,
-                        chunk_id=chunk.chunk_id,
-                        text=chunk.text,
-                        char_count=chunk.char_count,
-                        # New chunks start in short-term memory at default
-                        # confidence; entities are populated when spaCy is on.
-                        memory_tier="stm",
-                        entities=getattr(chunk, "entities", []) or [],
-                    )
-                    self.db.add(stored_chunk)
+                # Phase 10: when parent-child chunking is enabled, store a
+                # two-level hierarchy derived from the result content instead
+                # of the flat chunk list.
+                if settings.enable_parent_child_chunking and result.content:
+                    self._add_hierarchical_chunks(result_id, result.content)
+                else:
+                    for chunk in result.chunks:
+                        stored_chunk = StoredChunk(
+                            id=str(uuid.uuid4()),
+                            result_id=result_id,
+                            chunk_id=chunk.chunk_id,
+                            text=chunk.text,
+                            char_count=chunk.char_count,
+                            # New chunks start in short-term memory at default
+                            # confidence; entities are populated when spaCy is on.
+                            memory_tier="stm",
+                            entities=getattr(chunk, "entities", []) or [],
+                        )
+                        self.db.add(stored_chunk)
 
             await self.db.flush()
             logger.info(f"StoreService: saved query '{query}' with {len(results)} results")
@@ -98,3 +106,32 @@ class StoreService:
         except Exception as e:
             logger.error(f"StoreService: failed to save results: {e}")
             raise
+
+    def _add_hierarchical_chunks(self, result_id: str, content: str) -> None:
+        """
+        Store parent + child chunks for one result (Phase 10).
+
+        Parents (is_parent=True) carry wide context; children (is_parent=False)
+        carry a `parent_id` back to their parent and are what gets embedded.
+        """
+        hier = ChunkService(
+            chunk_size=settings.default_chunk_size,
+            overlap=settings.default_chunk_overlap,
+        ).chunk_hierarchical(content, parent_size=settings.parent_chunk_size)
+
+        parent_ids: list[str] = []
+        for parent in hier["parents"]:
+            pid = str(uuid.uuid4())
+            parent_ids.append(pid)
+            self.db.add(StoredChunk(
+                id=pid, result_id=result_id, chunk_id=parent.chunk_id,
+                text=parent.text, char_count=parent.char_count,
+                memory_tier="stm", is_parent=True,
+            ))
+        for child in hier["children"]:
+            ch = child["chunk"]
+            self.db.add(StoredChunk(
+                id=str(uuid.uuid4()), result_id=result_id, chunk_id=ch.chunk_id,
+                text=ch.text, char_count=ch.char_count, memory_tier="stm",
+                is_parent=False, parent_id=parent_ids[child["parent_index"]],
+            ))

@@ -94,3 +94,64 @@ class HealthResponse(BaseModel):
     version: str
     service: str
     components: dict
+
+
+class FeedbackResponse(BaseModel):
+    """Acknowledgement returned after recording a feedback event (Phase 6)."""
+    feedback_id: str
+    level: str
+    feedback_type: str
+    recorded: bool = True
+    effects: list[str] = []   # what ranking signals this feedback updated
+
+
+class FeedbackStats(BaseModel):
+    """Aggregate feedback analytics (Phase 6/7 dashboard)."""
+    total: int
+    by_type: dict = {}
+    by_level: dict = {}
+    satisfaction_rate: float = 0.0   # positive / total, in [0,1]
+    best_sources: list[dict] = []
+    worst_sources: list[dict] = []
+    most_flagged_chunks: list[dict] = []
+    sources_needing_refresh: list[dict] = []
+
+
+class RetrievedSource(BaseModel):
+    """One source backing a hybrid answer, with its routing signals."""
+    title: str
+    url: str
+    trust: float = 0.5
+    freshness: float = 0.5
+    similarity: float | None = None       # set on the memory path
+    from_memory: bool = False
+
+
+class HybridSearchResponse(BaseModel):
+    """
+    Response from the confidence-routed hybrid retrieval endpoint (Phase 5).
+
+    `retrieval_mode` is the mode actually used after routing; `from_memory`
+    tells the caller whether the answer came from local semantic memory or a
+    fresh web crawl. `routing_trace` records every decision the router made.
+    """
+    query: str
+    retrieval_mode: str               # fast | fresh | hybrid | deep
+    query_class: str                  # news | recent | technical | ...
+    web_required: bool
+    from_memory: bool                 # answered from memory vs. fresh crawl
+    confidence: float                 # memory confidence the router computed
+    processing_time_ms: int
+    answer: str = ""
+    answer_model: str = ""
+    citations_markdown: str = ""
+    citations_json: list[dict] = []
+    results: list[SearchResult] = []
+    sources: list[RetrievedSource] = []
+    routing_trace: list[str] = []     # human-readable routing decisions
+    # Phase 10 citation verification: share of [n] markers backed by an
+    # on-topic source, and the markers that failed the check.
+    citation_support: float = 0.0
+    unsupported_citations: list[int] = []
+    cache_hit: bool = False
+    degraded: bool = False

@@ -35,13 +35,13 @@ from app.services.cache_service import CacheService
 from app.services.chunk_service import ChunkService
 from app.services.citation_service import CitationService
 from app.services.clean_service import CleanService
-from app.services.credibility_service import CredibilityService
 from app.services.entity_service import EntityService
 from app.services.fetch_service import FetchService
 from app.services.graph_service import GraphService
 from app.services.rank_service import RankService
 from app.services.sanitize_service import SanitizeService
 from app.services.search_service import SearchService
+from app.services.source_trust_service import SourceTrustService
 from app.services.store_service import StoreService
 
 logger = logging.getLogger(__name__)
@@ -195,11 +195,14 @@ class SearchPipeline:
         final_results: list[SearchResult] = []
         with self._stage("rank") as span:
             ranked = RankService().rank(request.query, processed_results)
-            credibility = CredibilityService()
+            # Blended source trust = static credibility + learned feedback
+            # signal (Phase 7). With no feedback yet it equals the old static
+            # credibility, so existing behaviour is preserved.
+            trust_service = SourceTrustService(self.db)
             for r in ranked:
-                cred = credibility.score(r.url)
-                # final = relevance * 0.7 + credibility * 0.3
-                r.score = round((r.score * 0.7) + (cred * 0.3), 4)
+                trust = await trust_service.get_trust(r.url)
+                # final = relevance * 0.7 + source_trust * 0.3
+                r.score = round((r.score * 0.7) + (trust * 0.3), 4)
             ranked.sort(key=lambda r: r.score, reverse=True)
             for pos, r in enumerate(
                 (x for x in ranked if x.score >= request.min_score), start=1
@@ -222,7 +225,9 @@ class SearchPipeline:
         answer_text = ""
         answer_model = ""
         with self._stage("answer") as span:
-            answer_result = await AnswerService().synthesize(request.query, final_results)
+            answer_result = await AnswerService(
+                model=request.llm_model
+            ).synthesize(request.query, final_results)
             if answer_result.ok:
                 answer_text = answer_result.answer
                 answer_model = answer_result.model

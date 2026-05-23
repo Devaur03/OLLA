@@ -73,6 +73,7 @@ async def _lookup_db_key(raw_key: str) -> dict | None:
                     "user_id": user.id,
                     "user_plan": user.plan,
                     "user_email": user.email,
+                    "role": getattr(api_key, "role", "member") or "member",
                 }
     except Exception as e:
         logger.warning("AuthMiddleware: DB key lookup failed: %s", e)
@@ -97,6 +98,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 request.state.user_id    = "static"
                 request.state.user_plan  = "enterprise"
                 request.state.user_email = ""
+                request.state.api_key_role = "admin"  # static keys = full access
                 return await call_next(request)
 
             # 2. DB-backed keys
@@ -106,6 +108,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 request.state.user_id    = info["user_id"]
                 request.state.user_plan  = info["user_plan"]
                 request.state.user_email = info["user_email"]
+                request.state.api_key_role = info.get("role", "member")
                 return await call_next(request)
 
             # Key provided but not valid

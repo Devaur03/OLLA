@@ -51,9 +51,10 @@ class AnswerResult:
 class AnswerService:
     """Synthesizes a cited natural-language answer from retrieved results."""
 
-    def __init__(self) -> None:
+    def __init__(self, model: str | None = None) -> None:
         self.base_url = settings.ollama_base_url.rstrip("/")
-        self.model = settings.ollama_model
+        # Per-request override (Phase 3) falls back to the configured model.
+        self.model = model or settings.ollama_model
         self.enabled = settings.enable_answer_synthesis
         self.timeout = settings.ollama_timeout
         self.max_context_chars = settings.answer_max_context_chars
