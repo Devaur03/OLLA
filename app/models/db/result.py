@@ -4,6 +4,7 @@ from sqlalchemy import String, Integer, Float, DateTime, Text, ForeignKey, Boole
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 from app.models.db.base import Base
+from app.models.db.workspace import DEFAULT_WORKSPACE_ID
 
 if TYPE_CHECKING:
     from app.models.db.query import StoredQuery
@@ -18,6 +19,11 @@ class StoredResult(Base):
     )
     query_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("queries.id", ondelete="CASCADE"), nullable=False
+    )
+    # Phase 12: multi-tenant workspace scoping
+    workspace_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False, default=DEFAULT_WORKSPACE_ID, index=True,
     )
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=True)

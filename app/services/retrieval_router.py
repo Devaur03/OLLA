@@ -23,6 +23,7 @@ Every decision is appended to `routing_trace` so the dashboard and the caller
 can see exactly why the router went where it went.
 """
 
+import asyncio
 import logging
 import time
 
@@ -47,6 +48,7 @@ from app.services.query_expansion_service import QueryExpansionService
 from app.services.rerank_service import RerankService
 from app.services.scoring_service import ScoringService
 from app.services.source_trust_service import SourceTrustService
+from app.services.store_service import StoreService
 
 logger = logging.getLogger(__name__)
 
@@ -62,12 +64,13 @@ _CONF_W = {
 class RetrievalRouter:
     """Routes a query across cache, local vector memory, and the web."""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, workspace_id: str):
         self.db = db
+        self.workspace_id = workspace_id
         self.classifier = QueryClassifier()
         self.freshness = FreshnessService()
         self.scoring = ScoringService()
-        self.trust = SourceTrustService(db)
+        self.trust = SourceTrustService(db, workspace_id)
         self.cache = CacheService()
 
     # ------------------------------------------------------------- run
@@ -172,7 +175,7 @@ class RetrievalRouter:
 
         query_vec = await EmbedService().embed_query(request.query)
         if not query_vec:
-            logger.warning("RetrievalRouter: query embedding failed — memory skipped")
+            logger.warning("RetrievalRouter: query embedding failed -- memory skipped")
             return empty
 
         vector_str = "[" + ",".join(map(str, query_vec)) + "]"
@@ -196,6 +199,7 @@ class RetrievalRouter:
             FROM chunks c
             JOIN results r ON c.result_id = r.id
             WHERE c.embedding IS NOT NULL
+              AND c.workspace_id = :ws
             ORDER BY c.embedding <=> CAST(:embedding AS vector)
             LIMIT :lim
             """
@@ -203,7 +207,7 @@ class RetrievalRouter:
         try:
             rows = (
                 await self.db.execute(
-                    sql, {"embedding": vector_str, "lim": request.top_k * 3}
+                    sql, {"embedding": vector_str, "lim": request.top_k * 3, "ws": self.workspace_id}
                 )
             ).fetchall()
         except Exception as e:  # noqa: BLE001
@@ -386,27 +390,112 @@ class RetrievalRouter:
         self, request, cls, mode, trace, start, cache_key
     ) -> HybridSearchResponse:
         """Run the full web pipeline and adapt its response to the hybrid shape."""
+        is_deep = (mode == RetrievalMode.DEEP)
+        queries_to_run = [request.query]
         max_results = request.max_results
-        if mode == RetrievalMode.DEEP:
+
+        if is_deep:
             max_results = min(10, max(request.max_results, request.max_results * 2))
             trace.append(f"DEEP mode → widening crawl to {max_results} results")
+            if settings.enable_query_expansion:
+                variants = QueryExpansionService().expand(request.query, n=3)
+                if variants:
+                    queries_to_run.extend(variants)
+                    trace.append(f"DEEP mode → multi-crawl expanded queries: {variants}")
 
-        # --- Phase 10: query rewriting — clean the crawl query ------------
-        search_query = request.query
-        if settings.enable_query_expansion:
+        # --- Phase 10: query rewriting for non-DEEP mode ------------------
+        elif settings.enable_query_expansion:
             rewritten = QueryExpansionService().rewrite(request.query)
             if rewritten != request.query and len(rewritten) >= 3:
-                search_query = rewritten
-                trace.append(f"query rewritten for crawl: {search_query!r}")
+                queries_to_run = [rewritten]
+                trace.append(f"query rewritten for crawl: {rewritten!r}")
 
-        search_req = SearchRequest(
-            query=search_query, max_results=max_results, llm_model=request.llm_model
-        )
-        try:
-            web = await SearchPipeline(self.db).run(search_req)
-        except PipelineError as e:
-            trace.append(f"web pipeline failed ({e.detail}) — returning empty result")
-            return self._empty(request, cls, mode, trace, start)
+        # --- Concurrent execution of pipelines ----------------------------
+        tasks = []
+        for q in queries_to_run:
+            search_req = SearchRequest(
+                query=q, max_results=max_results, llm_model=request.llm_model
+            )
+            tasks.append(
+                SearchPipeline(self.db, self.workspace_id).run(
+                    search_req, skip_answer=is_deep, skip_store=is_deep
+                )
+            )
+
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+        if not is_deep:
+            web = responses[0]
+            if isinstance(web, Exception):
+                if isinstance(web, PipelineError):
+                    trace.append(f"web pipeline failed ({web.detail}) — returning empty result")
+                else:
+                    trace.append(f"web pipeline failed ({web}) — returning empty result")
+                return self._empty(request, cls, mode, trace, start)
+            trace.extend(f"web stage {t.stage}: {t.status}" for t in web.trace)
+        else:
+            # --- Phase 10: Pool, Dedup, Rerank, Answer, Store --------------
+            pooled_results = []
+            seen_urls = set()
+            degraded = False
+            for i, r in enumerate(responses):
+                q = queries_to_run[i]
+                if isinstance(r, Exception):
+                    degraded = True
+                    trace.append(f"crawl failed for {q!r}: {r}")
+                    continue
+                if r.degraded:
+                    degraded = True
+                trace.extend(f"crawl stage {t.stage}: {t.status} ({q!r})" for t in r.trace)
+                for res in r.results:
+                    if res.url not in seen_urls:
+                        seen_urls.add(res.url)
+                        pooled_results.append(res)
+            
+            trace.append(f"DEEP mode → pooled {len(pooled_results)} unique results across {len(queries_to_run)} crawls")
+            if not pooled_results:
+                trace.append("all deep crawls failed or returned empty")
+                return self._empty(request, cls, mode, trace, start)
+
+            # Rerank
+            if RerankService().available:
+                pooled_results = await RerankService().rerank(request.query, pooled_results, text_of=lambda x: x.content)
+            
+            # Truncate and recompute ranks
+            pooled_results = pooled_results[:request.max_results]
+            for i, res in enumerate(pooled_results):
+                res.rank = i + 1
+
+            # Synthesize Answer
+            answer_text, answer_model = "", ""
+            answer = await AnswerService(model=request.llm_model).synthesize(request.query, pooled_results)
+            if answer.ok:
+                answer_text, answer_model = answer.answer, answer.model
+            else:
+                degraded = True
+                trace.append(f"answer synthesis failed: {answer.error}")
+
+            # Store final result
+            elapsed_ms = int((time.monotonic() - start) * 1000)
+            from app.services.graph_service import GraphService
+            query_id = await StoreService(self.db, self.workspace_id).save(
+                query=request.query, params={"mode": "DEEP"},
+                results=pooled_results, processing_ms=elapsed_ms
+            )
+            if settings.enable_knowledge_graph and query_id:
+                await GraphService(self.db).build_edges()
+
+            # Create mock SearchResponse for standard downstream processing
+            citations_md = CitationService().generate_citations_block(pooled_results)
+            citations_json = CitationService().generate_json_citations(pooled_results)
+            
+            from app.models.response import SearchResponse
+            web = SearchResponse(
+                query=request.query, total_results=len(pooled_results),
+                processing_time_ms=elapsed_ms, results=pooled_results,
+                citations_markdown=citations_md, citations_json=citations_json,
+                degraded=degraded, trace=[], answer=answer_text, answer_model=answer_model
+            )
 
         sources = [
             RetrievedSource(
@@ -415,7 +504,6 @@ class RetrievalRouter:
             )
             for r in web.results
         ]
-        trace.extend(f"web stage {t.stage}: {t.status}" for t in web.trace)
         trace.append(f"web crawl returned {len(web.results)} results")
 
         cite_support, unsupported = self._verify_citations(

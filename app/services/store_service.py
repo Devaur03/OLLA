@@ -27,8 +27,9 @@ def hash_query(query: str, params: dict) -> str:
 class StoreService:
     """Persists search results to PostgreSQL."""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, workspace_id: str):
         self.db = db
+        self.workspace_id = workspace_id
 
     async def save(
         self,
@@ -60,6 +61,7 @@ class StoreService:
                 query_hash=query_hash,
                 result_count=len(results),
                 processing_ms=processing_ms,
+                workspace_id=self.workspace_id,
             )
             self.db.add(stored_query)
 
@@ -76,6 +78,7 @@ class StoreService:
                     score=result.score,
                     char_count=result.char_count,
                     chunk_count=result.chunk_count,
+                    workspace_id=self.workspace_id,
                 )
                 self.db.add(stored_result)
 
@@ -96,6 +99,7 @@ class StoreService:
                             # confidence; entities are populated when spaCy is on.
                             memory_tier="stm",
                             entities=getattr(chunk, "entities", []) or [],
+                            workspace_id=self.workspace_id,
                         )
                         self.db.add(stored_chunk)
 
@@ -126,7 +130,7 @@ class StoreService:
             self.db.add(StoredChunk(
                 id=pid, result_id=result_id, chunk_id=parent.chunk_id,
                 text=parent.text, char_count=parent.char_count,
-                memory_tier="stm", is_parent=True,
+                memory_tier="stm", is_parent=True, workspace_id=self.workspace_id,
             ))
         for child in hier["children"]:
             ch = child["chunk"]
@@ -134,4 +138,5 @@ class StoreService:
                 id=str(uuid.uuid4()), result_id=result_id, chunk_id=ch.chunk_id,
                 text=ch.text, char_count=ch.char_count, memory_tier="stm",
                 is_parent=False, parent_id=parent_ids[child["parent_index"]],
+                workspace_id=self.workspace_id,
             ))

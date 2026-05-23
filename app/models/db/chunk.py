@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.db.base import Base
+from app.models.db.workspace import DEFAULT_WORKSPACE_ID
 
 if TYPE_CHECKING:
     from app.models.db.result import StoredResult
@@ -27,6 +28,11 @@ class StoredChunk(Base):
     )
     result_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("results.id", ondelete="CASCADE"), nullable=False
+    )
+    # Phase 12: multi-tenant workspace scoping
+    workspace_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False, default=DEFAULT_WORKSPACE_ID, index=True,
     )
     chunk_id: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)

@@ -83,7 +83,7 @@ class RerankService:
                 zip(scores, items), key=lambda p: p[0], reverse=True
             )]
         except Exception as e:  # noqa: BLE001
-            logger.warning("RerankService: predict failed (%s) — passthrough", e)
+            logger.warning("RerankService: predict failed (%s) -- passthrough", e)
             ranked = list(items)
         return ranked if top_k is None else ranked[:top_k]
 

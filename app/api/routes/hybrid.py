@@ -12,7 +12,7 @@ This handler is intentionally thin.
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
@@ -27,6 +27,7 @@ router = APIRouter(tags=["hybrid"])
 
 @router.post("/search/hybrid", response_model=HybridSearchResponse)
 async def hybrid_search(
+    http_request: Request,
     request: HybridSearchRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
@@ -38,7 +39,8 @@ async def hybrid_search(
     every decision it made.
     """
     try:
-        return await RetrievalRouter(db).run(request)
+        workspace_id = getattr(http_request.state, "workspace_id", None)
+        return await RetrievalRouter(db, workspace_id).run(request)
     except HTTPException:
         raise
     except Exception as e:  # noqa: BLE001

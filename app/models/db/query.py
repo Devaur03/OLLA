@@ -1,9 +1,10 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import String, Integer, DateTime, Text
+from sqlalchemy import String, Integer, DateTime, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 from app.models.db.base import Base
+from app.models.db.workspace import DEFAULT_WORKSPACE_ID
 
 if TYPE_CHECKING:
     from app.models.db.result import StoredResult
@@ -22,6 +23,12 @@ class StoredQuery(Base):
     )
     result_count: Mapped[int] = mapped_column(Integer, default=0)
     processing_ms: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Phase 12: multi-tenant workspace scoping
+    workspace_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False, default=DEFAULT_WORKSPACE_ID, index=True,
+    )
 
     # Relationship: one query → many results
     results: Mapped[list["StoredResult"]] = relationship(

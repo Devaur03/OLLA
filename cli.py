@@ -25,6 +25,9 @@ import textwrap
 import urllib.error
 import urllib.request
 
+if sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 DEFAULT_HOST = "http://localhost:8000"
 DEFAULT_OLLAMA = "http://localhost:11434"
 
@@ -54,6 +57,7 @@ def _c(text, *codes):
 def _request(host, path, payload=None, method="GET"):
     data = json.dumps(payload).encode() if payload is not None else None
     headers = {"Content-Type": "application/json"} if data else {}
+    headers["Connection"] = "close"
     req = urllib.request.Request(host + path, data=data, headers=headers, method=method)
     try:
         with _OPENER.open(req, timeout=180) as resp:

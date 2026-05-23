@@ -54,8 +54,9 @@ def domain_of(url: str) -> str:
 class SourceTrustService:
     """Reads and updates the `source_trust` table; blends with static scores."""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, workspace_id: str):
         self.db = db
+        self.workspace_id = workspace_id
         self._credibility = CredibilityService()
 
     # ----------------------------------------------------------- reads
@@ -76,8 +77,8 @@ class SourceTrustService:
         try:
             row = (
                 await self.db.execute(
-                    text("SELECT trust_score FROM source_trust WHERE domain = :d"),
-                    {"d": domain},
+                    text("SELECT trust_score FROM source_trust WHERE workspace_id = :ws AND domain = :d"),
+                    {"ws": self.workspace_id, "d": domain},
                 )
             ).first()
             return float(row.trust_score) if row else 0.5
@@ -109,12 +110,12 @@ class SourceTrustService:
             await self.db.execute(
                 text(
                     """
-                    INSERT INTO source_trust (domain, trust_score)
-                    VALUES (:d, :seed)
-                    ON CONFLICT (domain) DO NOTHING
+                    INSERT INTO source_trust (workspace_id, domain, trust_score)
+                    VALUES (:ws, :d, :seed)
+                    ON CONFLICT (workspace_id, domain) DO NOTHING
                     """
                 ),
-                {"d": domain, "seed": seed},
+                {"ws": self.workspace_id, "d": domain, "seed": seed},
             )
             await self.db.execute(
                 text(
@@ -127,11 +128,11 @@ class SourceTrustService:
                         outdated_count          = outdated_count + :outd,
                         refresh_needed          = (refresh_needed OR :outd = 1),
                         updated_at              = NOW()
-                    WHERE domain = :d
+                    WHERE workspace_id = :ws AND domain = :d
                     """
                 ),
                 {
-                    "d": domain, "delta": delta, "pos": positive, "neg": negative,
+                    "ws": self.workspace_id, "d": domain, "delta": delta, "pos": positive, "neg": negative,
                     "bad": bad, "outd": outdated, "lo": _MIN_TRUST, "hi": _MAX_TRUST,
                 },
             )
@@ -148,10 +149,10 @@ class SourceTrustService:
             seed = self._credibility.score(url)
             await self.db.execute(
                 text(
-                    "INSERT INTO source_trust (domain, trust_score) VALUES (:d, :seed) "
-                    "ON CONFLICT (domain) DO NOTHING"
+                    "INSERT INTO source_trust (workspace_id, domain, trust_score) VALUES (:ws, :d, :seed) "
+                    "ON CONFLICT (workspace_id, domain) DO NOTHING"
                 ),
-                {"d": domain, "seed": seed},
+                {"ws": self.workspace_id, "d": domain, "seed": seed},
             )
             await self.db.execute(
                 text(
@@ -160,10 +161,10 @@ class SourceTrustService:
                         citation_success_count = citation_success_count + 1,
                         trust_score = LEAST(:hi, trust_score + 0.01),
                         updated_at = NOW()
-                    WHERE domain = :d
+                    WHERE workspace_id = :ws AND domain = :d
                     """
                 ),
-                {"d": domain, "hi": _MAX_TRUST},
+                {"ws": self.workspace_id, "d": domain, "hi": _MAX_TRUST},
             )
         except Exception as e:  # noqa: BLE001
             logger.warning("SourceTrustService: record_citation_success failed: %s", e)
@@ -178,11 +179,12 @@ class SourceTrustService:
                         SELECT domain, trust_score, negative_count, bad_source_count,
                                outdated_count, refresh_needed
                         FROM source_trust
+                        WHERE workspace_id = :ws
                         ORDER BY trust_score ASC
                         LIMIT :lim
                         """
                     ),
-                    {"lim": limit},
+                    {"ws": self.workspace_id, "lim": limit},
                 )
             ).fetchall()
             return [dict(r._mapping) for r in rows]
@@ -200,11 +202,12 @@ class SourceTrustService:
                         SELECT domain, trust_score, positive_count,
                                citation_success_count
                         FROM source_trust
+                        WHERE workspace_id = :ws
                         ORDER BY trust_score DESC
                         LIMIT :lim
                         """
                     ),
-                    {"lim": limit},
+                    {"ws": self.workspace_id, "lim": limit},
                 )
             ).fetchall()
             return [dict(r._mapping) for r in rows]

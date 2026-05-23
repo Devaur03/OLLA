@@ -32,10 +32,11 @@ _POSITIVE = {FeedbackType.USEFUL}
 class FeedbackService:
     """Records feedback events and folds them into ranking signals."""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, workspace_id: str):
         self.db = db
+        self.workspace_id = workspace_id
         self.scoring = ScoringService()
-        self.trust = SourceTrustService(db)
+        self.trust = SourceTrustService(db, workspace_id)
 
     # ----------------------------------------------------------- record
 
@@ -59,10 +60,10 @@ class FeedbackService:
                 """
                 INSERT INTO feedback
                     (id, query_id, result_id, chunk_id, source_domain,
-                     source_url, level, feedback_type, comment)
+                     source_url, level, feedback_type, comment, workspace_id)
                 VALUES
                     (:id, :query_id, :result_id, :chunk_id, :domain,
-                     :url, :level, :ftype, :comment)
+                     :url, :level, :ftype, :comment, :ws)
                 """
             ),
             {
@@ -75,6 +76,7 @@ class FeedbackService:
                 "level": req.level.value,
                 "ftype": req.feedback_type.value,
                 "comment": req.comment,
+                "ws": self.workspace_id,
             },
         )
         effects.append(f"recorded {req.feedback_type.value} feedback at {req.level.value} level")
@@ -111,11 +113,11 @@ class FeedbackService:
                         f"""
                         UPDATE chunks
                         SET {col} = {col} + 1
-                        WHERE id = :cid
+                        WHERE id = :cid AND workspace_id = :ws
                         RETURNING positive_feedback_count, negative_feedback_count
                         """
                     ),
-                    {"cid": req.chunk_id},
+                    {"cid": req.chunk_id, "ws": self.workspace_id},
                 )
             ).first()
             if not row:
@@ -125,8 +127,8 @@ class FeedbackService:
                 int(row.positive_feedback_count), int(row.negative_feedback_count)
             )
             await self.db.execute(
-                text("UPDATE chunks SET usefulness_score = :u WHERE id = :cid"),
-                {"u": usefulness, "cid": req.chunk_id},
+                text("UPDATE chunks SET usefulness_score = :u WHERE id = :cid AND workspace_id = :ws"),
+                {"u": usefulness, "cid": req.chunk_id, "ws": self.workspace_id},
             )
             return [
                 f"chunk usefulness recomputed → {usefulness:.3f} "
@@ -139,8 +141,8 @@ class FeedbackService:
     async def _flag_result_refresh(self, result_id: str) -> None:
         try:
             await self.db.execute(
-                text("UPDATE results SET refresh_needed = TRUE WHERE id = :rid"),
-                {"rid": result_id},
+                text("UPDATE results SET refresh_needed = TRUE WHERE id = :rid AND workspace_id = :ws"),
+                {"rid": result_id, "ws": self.workspace_id},
             )
         except Exception as e:  # noqa: BLE001
             logger.warning("FeedbackService: refresh flag failed: %s", e)
@@ -153,8 +155,8 @@ class FeedbackService:
             if req.result_id:
                 row = (
                     await self.db.execute(
-                        text("SELECT url FROM results WHERE id = :rid"),
-                        {"rid": req.result_id},
+                        text("SELECT url FROM results WHERE id = :rid AND workspace_id = :ws"),
+                        {"rid": req.result_id, "ws": self.workspace_id},
                     )
                 ).first()
                 if row:
@@ -164,9 +166,9 @@ class FeedbackService:
                     await self.db.execute(
                         text(
                             "SELECT r.url FROM results r "
-                            "JOIN chunks c ON c.result_id = r.id WHERE c.id = :cid"
+                            "JOIN chunks c ON c.result_id = r.id WHERE c.id = :cid AND c.workspace_id = :ws"
                         ),
-                        {"cid": req.chunk_id},
+                        {"cid": req.chunk_id, "ws": self.workspace_id},
                     )
                 ).first()
                 if row:
@@ -187,12 +189,14 @@ class FeedbackService:
         try:
             by_type = (
                 await self.db.execute(
-                    text("SELECT feedback_type, COUNT(*) AS n FROM feedback GROUP BY feedback_type")
+                    text("SELECT feedback_type, COUNT(*) AS n FROM feedback WHERE workspace_id = :ws GROUP BY feedback_type"),
+                    {"ws": self.workspace_id}
                 )
             ).fetchall()
             by_level = (
                 await self.db.execute(
-                    text("SELECT level, COUNT(*) AS n FROM feedback GROUP BY level")
+                    text("SELECT level, COUNT(*) AS n FROM feedback WHERE workspace_id = :ws GROUP BY level"),
+                    {"ws": self.workspace_id}
                 )
             ).fetchall()
             out["by_type"] = {r.feedback_type: int(r.n) for r in by_type}
@@ -210,11 +214,13 @@ class FeedbackService:
                         FROM feedback
                         WHERE chunk_id IS NOT NULL
                           AND feedback_type <> 'useful'
+                          AND workspace_id = :ws
                         GROUP BY chunk_id
                         ORDER BY flags DESC
                         LIMIT 10
                         """
-                    )
+                    ),
+                    {"ws": self.workspace_id}
                 )
             ).fetchall()
             out["most_flagged_chunks"] = [
@@ -225,8 +231,9 @@ class FeedbackService:
                 await self.db.execute(
                     text(
                         "SELECT domain, outdated_count FROM source_trust "
-                        "WHERE refresh_needed = TRUE ORDER BY outdated_count DESC LIMIT 10"
-                    )
+                        "WHERE refresh_needed = TRUE AND workspace_id = :ws ORDER BY outdated_count DESC LIMIT 10"
+                    ),
+                    {"ws": self.workspace_id}
                 )
             ).fetchall()
             out["sources_needing_refresh"] = [

@@ -11,7 +11,7 @@ The decision/learning logic lives in `app.services.feedback_service`.
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
@@ -26,6 +26,7 @@ router = APIRouter(tags=["feedback"])
 
 @router.post("/feedback", response_model=FeedbackResponse)
 async def submit_feedback(
+    http_request: Request,
     request: FeedbackRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
@@ -35,8 +36,9 @@ async def submit_feedback(
     Feedback updates metadata and ranking signals only — it never rewrites
     scraped content. The `effects` field lists exactly what was updated.
     """
+    workspace_id = getattr(http_request.state, "workspace_id", None)
     try:
-        feedback_id, effects = await FeedbackService(db).record(request)
+        feedback_id, effects = await FeedbackService(db, workspace_id).record(request)
         return FeedbackResponse(
             feedback_id=feedback_id,
             level=request.level.value,
@@ -52,10 +54,11 @@ async def submit_feedback(
 
 
 @router.get("/feedback/stats", response_model=FeedbackStats)
-async def feedback_stats(db: AsyncSession = Depends(get_db_session)):
+async def feedback_stats(http_request: Request, db: AsyncSession = Depends(get_db_session)):
     """Aggregate feedback analytics: counts, satisfaction rate, source quality."""
     try:
-        return FeedbackStats(**await FeedbackService(db).stats())
+        workspace_id = getattr(http_request.state, "workspace_id", None)
+        return FeedbackStats(**await FeedbackService(db, workspace_id).stats())
     except Exception as e:  # noqa: BLE001
         logger.error("Feedback stats failed: %s", e, exc_info=True)
         raise HTTPException(status_code=503, detail=f"Failed to load feedback stats: {e}") from e

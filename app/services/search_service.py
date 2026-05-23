@@ -102,7 +102,7 @@ class SearchService:
         # Retry once with spaces around dots collapsed.
         alt = re.sub(r"\s*\.\s*", ".", query).strip()
         if alt and alt != query:
-            logger.info("SearchService: 0 results for %r — retrying as %r", query, alt)
+            logger.info("SearchService: 0 results for %r -- retrying as %r", query, alt)
             candidates = await self._search_ddg(alt, safe_val, time_val, region)
             if candidates:
                 return candidates
@@ -262,9 +262,9 @@ class SearchService:
         except httpx.HTTPStatusError as e:
             code = e.response.status_code
             if code == 401:
-                logger.error("SearchService: Brave 401 — check BRAVE_API_KEY.")
+                logger.error("SearchService: Brave 401 -- check BRAVE_API_KEY.")
             elif code == 429:
-                logger.error("SearchService: Brave 429 — monthly quota exhausted.")
+                logger.error("SearchService: Brave 429 -- monthly quota exhausted.")
             else:
                 logger.error("SearchService: Brave HTTP error: %s", e)
             return []

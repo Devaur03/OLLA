@@ -32,8 +32,9 @@ logger = logging.getLogger(__name__)
 class SourcesService:
     """Reads and refreshes individual stored results."""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, workspace_id: str):
         self.db = db
+        self.workspace_id = workspace_id
 
     async def get_source(self, result_id: str) -> dict | None:
         """Return one stored result plus its chunks, or None if not found."""
@@ -44,10 +45,10 @@ class SourcesService:
                     SELECT id, query_id, rank, title, url, content, score,
                            char_count, chunk_count, fetched_at,
                            last_refreshed_at, refresh_needed
-                    FROM results WHERE id = :rid
+                    FROM results WHERE id = :rid AND workspace_id = :ws
                     """
                 ),
-                {"rid": result_id},
+                {"rid": result_id, "ws": self.workspace_id},
             )
         ).first()
         if not row:
@@ -59,10 +60,10 @@ class SourcesService:
                     """
                     SELECT id, chunk_id, text, char_count, confidence,
                            usefulness_score, memory_tier
-                    FROM chunks WHERE result_id = :rid ORDER BY chunk_id
+                    FROM chunks WHERE result_id = :rid AND workspace_id = :ws ORDER BY chunk_id
                     """
                 ),
-                {"rid": result_id},
+                {"rid": result_id, "ws": self.workspace_id},
             )
         ).fetchall()
 
@@ -79,8 +80,8 @@ class SourcesService:
         """
         row = (
             await self.db.execute(
-                text("SELECT id, url, title FROM results WHERE id = :rid"),
-                {"rid": result_id},
+                text("SELECT id, url, title FROM results WHERE id = :rid AND workspace_id = :ws"),
+                {"rid": result_id, "ws": self.workspace_id},
             )
         ).first()
         if not row:
@@ -105,20 +106,22 @@ class SourcesService:
 
         # --- replace stored content + chunks ------------------------------
         await self.db.execute(
-            text("DELETE FROM chunks WHERE result_id = :rid"), {"rid": result_id}
+            text("DELETE FROM chunks WHERE result_id = :rid AND workspace_id = :ws"), 
+            {"rid": result_id, "ws": self.workspace_id}
         )
         for ch in chunks:
             await self.db.execute(
                 text(
                     """
                     INSERT INTO chunks (id, result_id, chunk_id, text, char_count,
-                                        memory_tier)
-                    VALUES (:id, :rid, :cidx, :txt, :cc, 'stm')
+                                        memory_tier, workspace_id)
+                    VALUES (:id, :rid, :cidx, :txt, :cc, 'stm', :ws)
                     """
                 ),
                 {
                     "id": str(uuid.uuid4()), "rid": result_id,
                     "cidx": ch.chunk_id, "txt": ch.text, "cc": ch.char_count,
+                    "ws": self.workspace_id,
                 },
             )
         await self.db.execute(
@@ -130,10 +133,10 @@ class SourcesService:
                     chunk_count = :n,
                     last_refreshed_at = NOW(),
                     refresh_needed = FALSE
-                WHERE id = :rid
+                WHERE id = :rid AND workspace_id = :ws
                 """
             ),
-            {"content": cleaned, "cc": len(cleaned), "n": len(chunks), "rid": result_id},
+            {"content": cleaned, "cc": len(cleaned), "n": len(chunks), "rid": result_id, "ws": self.workspace_id},
         )
         logger.info("SourcesService: refreshed %s (%d chunks)", row.url, len(chunks))
         return {

@@ -11,7 +11,7 @@ See OPTIMIZATION_PLAN.md §2.
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
@@ -26,7 +26,8 @@ router = APIRouter(tags=["search"])
 
 @router.post("/search", response_model=SearchResponse)
 async def search(
-    request: SearchRequest,
+    request: Request,
+    body: SearchRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
     """
@@ -40,9 +41,10 @@ async def search(
     - Prompt-injection sanitization of scraped content.
     - Per-stage trace + graceful degradation (`degraded` flag on the response).
     """
-    pipeline = SearchPipeline(db)
+    workspace_id = getattr(request.state, "workspace_id", None)
+    pipeline = SearchPipeline(db, workspace_id)
     try:
-        return await pipeline.run(request)
+        return await pipeline.run(body)
     except PipelineError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail) from e
     except HTTPException:

@@ -48,7 +48,7 @@ class MemoryService:
         )
         promoted = result.rowcount or 0
         if promoted:
-            logger.info("MemoryService: promoted %d chunk(s) STM → LTM", promoted)
+            logger.info("MemoryService: promoted %d chunk(s) STM -> LTM", promoted)
         return promoted
 
     async def prune_stm(self) -> int:

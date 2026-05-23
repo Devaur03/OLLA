@@ -1,5 +1,6 @@
 # app/models/db package — import all ORM models so Alembic can discover them
 from app.models.db.base import Base
+from app.models.db.workspace import Workspace
 from app.models.db.query import StoredQuery
 from app.models.db.result import StoredResult
 from app.models.db.chunk import StoredChunk
@@ -10,6 +11,6 @@ from app.models.db.feedback import Feedback
 from app.models.db.source_trust import SourceTrust
 
 __all__ = [
-    "Base", "StoredQuery", "StoredResult", "StoredChunk", "User", "ApiKey",
-    "UsageEvent", "Feedback", "SourceTrust",
+    "Base", "Workspace", "StoredQuery", "StoredResult", "StoredChunk", "User",
+    "ApiKey", "UsageEvent", "Feedback", "SourceTrust",
 ]

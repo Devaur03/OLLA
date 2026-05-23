@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
@@ -14,6 +14,7 @@ router = APIRouter(tags=["semantic"])
 
 @router.post("/search/semantic")
 async def semantic_search(
+    http_request: Request,
     request: SemanticSearchRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
@@ -50,7 +51,7 @@ async def semantic_search(
             1 - (c.embedding <=> CAST(:embedding AS vector)) AS similarity
         FROM chunks c
         JOIN results r ON c.result_id = r.id
-        WHERE c.embedding IS NOT NULL
+        WHERE c.embedding IS NOT NULL AND c.workspace_id = :ws
         ORDER BY c.embedding <=> CAST(:embedding AS vector)
         LIMIT :top_k
     """)
@@ -59,6 +60,7 @@ async def semantic_search(
         params = {
             "embedding": vector_str,
             "top_k": request.top_k,
+            "ws": getattr(http_request.state, "workspace_id", None),
         }
         
         result = await db.execute(sql, params)
@@ -90,7 +92,7 @@ async def semantic_search(
 
 
 @router.post("/search/embed-and-store")
-async def embed_stored_chunks(db: AsyncSession = Depends(get_db_session)):
+async def embed_stored_chunks(http_request: Request, db: AsyncSession = Depends(get_db_session)):
     """
     Utility endpoint: generates embeddings for all stored chunks that
     don't have an embedding yet. Call this after bulk-importing data
@@ -101,8 +103,10 @@ async def embed_stored_chunks(db: AsyncSession = Depends(get_db_session)):
     embed_service = EmbedService()
 
     # Find chunks without embeddings
+    workspace_id = getattr(http_request.state, "workspace_id", None)
     result = await db.execute(
-        text("SELECT id, text FROM chunks WHERE embedding IS NULL LIMIT 500")
+        text("SELECT id, text FROM chunks WHERE embedding IS NULL AND workspace_id = :ws LIMIT 500"),
+        {"ws": workspace_id}
     )
     rows = result.fetchall()
 
