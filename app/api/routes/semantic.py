@@ -32,7 +32,7 @@ async def semantic_search(
     if not query_embedding:
         raise HTTPException(
             status_code=503,
-            detail="Failed to generate query embedding. Check OPENAI_API_KEY or local model."
+            detail="Failed to generate query embedding. Check OPENAI_API_KEY or local model.",
         )
 
     # Build embedding vector string for pgvector
@@ -62,10 +62,10 @@ async def semantic_search(
             "top_k": request.top_k,
             "ws": getattr(http_request.state, "workspace_id", None),
         }
-        
+
         result = await db.execute(sql, params)
         rows = result.fetchall()
-        
+
         print(f"DEBUG: Returned rows: {len(rows)}")
     except Exception as e:
         logger.error(f"Semantic search query failed: {e}")
@@ -75,14 +75,16 @@ async def semantic_search(
     for row in rows:
         sim = round(float(row.similarity), 4)
         if sim >= request.min_similarity:
-            chunks.append({
-                "text": row.chunk_text,
-                "char_count": row.char_count,
-                "title": row.title,
-                "url": row.url,
-                "relevance_score": row.relevance_score,
-                "similarity": sim,
-            })
+            chunks.append(
+                {
+                    "text": row.chunk_text,
+                    "char_count": row.char_count,
+                    "title": row.title,
+                    "url": row.url,
+                    "relevance_score": row.relevance_score,
+                    "similarity": sim,
+                }
+            )
 
     return {
         "query": request.query,
@@ -105,8 +107,10 @@ async def embed_stored_chunks(http_request: Request, db: AsyncSession = Depends(
     # Find chunks without embeddings
     workspace_id = getattr(http_request.state, "workspace_id", None)
     result = await db.execute(
-        text("SELECT id, text FROM chunks WHERE embedding IS NULL AND workspace_id = :ws LIMIT 500"),
-        {"ws": workspace_id}
+        text(
+            "SELECT id, text FROM chunks WHERE embedding IS NULL AND workspace_id = :ws LIMIT 500"
+        ),
+        {"ws": workspace_id},
     )
     rows = result.fetchall()
 
@@ -128,7 +132,7 @@ async def embed_stored_chunks(http_request: Request, db: AsyncSession = Depends(
             vector_str = "[" + ",".join(map(str, embedding)) + "]"
             await db.execute(
                 text("UPDATE chunks SET embedding = :emb ::vector WHERE id = :id"),
-                {"emb": vector_str, "id": row.id}
+                {"emb": vector_str, "id": row.id},
             )
             processed += 1
 

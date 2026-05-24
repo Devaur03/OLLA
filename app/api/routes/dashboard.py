@@ -15,7 +15,7 @@ _DASHBOARD_HTML = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Hybrid Search — Dashboard</title>
+<title>OLLA — Dashboard</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3250;
@@ -142,7 +142,7 @@ padding:14px;margin-top:12px;font-family:monospace;color:var(--ok);font-size:.85
 </head>
 <body>
 <header>
-<h1>&#9889; Hybrid Search</h1>
+<h1>&#9889; OLLA</h1>
 <span style="font-size:.75rem;color:var(--muted)">for Agents</span>
 <div style="flex:1"></div>
 <span id="overall-status"></span>

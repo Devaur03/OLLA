@@ -23,20 +23,18 @@ logger = logging.getLogger(__name__)
 class QueryClass(str, Enum):
     """The intent buckets the router cares about."""
 
-    NEWS = "news"              # current events — web ALWAYS required
-    RECENT = "recent"          # "latest", "2026", recency-sensitive — prefer web
+    NEWS = "news"  # current events — web ALWAYS required
+    RECENT = "recent"  # "latest", "2026", recency-sensitive — prefer web
     COMPARISON = "comparison"  # "x vs y" — memory ok if both sides stored
-    TECHNICAL = "technical"    # docs/how-to — memory usually fine
+    TECHNICAL = "technical"  # docs/how-to — memory usually fine
     DEFINITION = "definition"  # "what is x" — evergreen, memory fine
-    RESEARCH = "research"      # deep/multi-faceted — favour DEEP mode
-    EVERGREEN = "evergreen"    # general stable knowledge — memory fine
+    RESEARCH = "research"  # deep/multi-faceted — favour DEEP mode
+    EVERGREEN = "evergreen"  # general stable knowledge — memory fine
 
 
 # Query classes whose answers go stale quickly; the router forces a web
 # refresh for these regardless of how confident local memory is.
-WEB_REQUIRED_CLASSES: frozenset[QueryClass] = frozenset(
-    {QueryClass.NEWS, QueryClass.RECENT}
-)
+WEB_REQUIRED_CLASSES: frozenset[QueryClass] = frozenset({QueryClass.NEWS, QueryClass.RECENT})
 
 
 @dataclass
@@ -44,23 +42,52 @@ class Classification:
     """Result of classifying one query."""
 
     query_class: QueryClass
-    web_required: bool          # answer is recency-sensitive → must crawl
-    confidence: float           # 0-1, how sure the heuristic is
-    signals: list[str]          # human-readable reasons (for traces/debugging)
+    web_required: bool  # answer is recency-sensitive → must crawl
+    confidence: float  # 0-1, how sure the heuristic is
+    signals: list[str]  # human-readable reasons (for traces/debugging)
 
 
 # --- keyword signal banks --------------------------------------------------
 _NEWS_TERMS = {
-    "news", "breaking", "headline", "headlines", "announced", "announcement",
-    "today", "yesterday", "this morning", "just now", "live",
+    "news",
+    "breaking",
+    "headline",
+    "headlines",
+    "announced",
+    "announcement",
+    "today",
+    "yesterday",
+    "this morning",
+    "just now",
+    "live",
 }
 _RECENT_TERMS = {
-    "latest", "newest", "recent", "recently", "current", "currently",
-    "this week", "this month", "this year", "now", "up to date", "updated",
-    "new release", "just released", "upcoming",
+    "latest",
+    "newest",
+    "recent",
+    "recently",
+    "current",
+    "currently",
+    "this week",
+    "this month",
+    "this year",
+    "now",
+    "up to date",
+    "updated",
+    "new release",
+    "just released",
+    "upcoming",
 }
-_COMPARISON_TERMS = {" vs ", " versus ", " or ", "compare", "comparison",
-                     "difference between", "better than", "pros and cons"}
+_COMPARISON_TERMS = {
+    " vs ",
+    " versus ",
+    " or ",
+    "compare",
+    "comparison",
+    "difference between",
+    "better than",
+    "pros and cons",
+}
 _DEFINITION_PATTERNS = (
     r"^\s*what\s+(is|are|was|were)\b",
     r"^\s*who\s+(is|are|was|were)\b",
@@ -69,14 +96,39 @@ _DEFINITION_PATTERNS = (
     r"\bexplain\b",
 )
 _TECHNICAL_TERMS = {
-    "how to", "how do", "install", "configure", "setup", "set up", "error",
-    "fix", "debug", "tutorial", "example", "documentation", "docs", "api",
-    "implement", "code", "syntax", "command",
+    "how to",
+    "how do",
+    "install",
+    "configure",
+    "setup",
+    "set up",
+    "error",
+    "fix",
+    "debug",
+    "tutorial",
+    "example",
+    "documentation",
+    "docs",
+    "api",
+    "implement",
+    "code",
+    "syntax",
+    "command",
 }
 _RESEARCH_TERMS = {
-    "research", "in depth", "in-depth", "comprehensive", "analysis", "survey",
-    "literature", "study", "deep dive", "everything about", "overview of",
-    "state of the art", "review of",
+    "research",
+    "in depth",
+    "in-depth",
+    "comprehensive",
+    "analysis",
+    "survey",
+    "literature",
+    "study",
+    "deep dive",
+    "everything about",
+    "overview of",
+    "state of the art",
+    "review of",
 }
 # Any 4-digit year >= the project's "current" era is a strong recency signal.
 _YEAR_RE = re.compile(r"\b(20[2-9]\d)\b")

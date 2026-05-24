@@ -60,20 +60,24 @@ class RetentionService:
                 logger.warning("RetentionService: purge of %s failed: %s", table, e)
                 deleted[table] = -1  # -1 signals "purge attempt failed"
 
-        logger.info("RetentionService: purged data older than %d days: %s",
-                    days, deleted)
+        logger.info("RetentionService: purged data older than %d days: %s", days, deleted)
         return deleted
 
     async def stats(self) -> dict:
         """Row counts per table plus the oldest query timestamp."""
         out: dict = {"counts": {}, "oldest_query": None, "newest_query": None}
-        tables = ("queries", "results", "chunks", "chunk_edges",
-                  "agent_traces", "feedback", "source_trust")
+        tables = (
+            "queries",
+            "results",
+            "chunks",
+            "chunk_edges",
+            "agent_traces",
+            "feedback",
+            "source_trust",
+        )
         for table in tables:
             try:
-                row = (
-                    await self.db.execute(text(f"SELECT COUNT(*) AS n FROM {table}"))
-                ).first()
+                row = (await self.db.execute(text(f"SELECT COUNT(*) AS n FROM {table}"))).first()
                 out["counts"][table] = int(row.n) if row else 0
             except Exception as e:  # noqa: BLE001
                 logger.warning("RetentionService: count of %s failed: %s", table, e)
@@ -82,8 +86,7 @@ class RetentionService:
         try:
             row = (
                 await self.db.execute(
-                    text("SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest "
-                         "FROM queries")
+                    text("SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM queries")
                 )
             ).first()
             if row and row.oldest:

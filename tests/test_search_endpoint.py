@@ -40,7 +40,9 @@ async def test_search_request_validation_max_results():
 @pytest.mark.asyncio
 async def test_search_returns_valid_structure():
     """Integration test — makes real search. Requires internet."""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", timeout=60.0) as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", timeout=60.0
+    ) as client:
         response = await client.post(
             "/api/v1/search",
             json={"query": "Python FastAPI tutorial", "max_results": 2},

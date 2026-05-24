@@ -31,31 +31,32 @@ from app.models.db.user import User
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/keys", tags=["keys"])
 
-KEY_PREFIX = "hsa_"   # hybrid-search-agent
+KEY_PREFIX = "hsa_"  # hybrid-search-agent
 MAX_KEYS_PER_USER = 5
 
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 
+
 class RegisterRequest(BaseModel):
     email: EmailStr
-    name:  str = Field(default="Default key", max_length=100)
+    name: str = Field(default="Default key", max_length=100)
 
 
 class RegisterResponse(BaseModel):
-    message:    str
-    api_key:    str   # shown once — user must copy it
+    message: str
+    api_key: str  # shown once — user must copy it
     key_prefix: str
-    user_id:    str
-    plan:       str
+    user_id: str
+    plan: str
 
 
 class KeyInfo(BaseModel):
-    id:          str
-    key_prefix:  str
-    name:        str
-    is_active:   bool
-    created_at:  datetime
+    id: str
+    key_prefix: str
+    name: str
+    is_active: bool
+    created_at: datetime
     last_used_at: datetime | None
 
 
@@ -64,18 +65,19 @@ class CreateKeyRequest(BaseModel):
 
 
 class CreateKeyResponse(BaseModel):
-    message:    str
-    api_key:    str   # shown once
+    message: str
+    api_key: str  # shown once
     key_prefix: str
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _generate_key() -> tuple[str, str, str]:
     """Returns (raw_key, key_hash, key_prefix)."""
-    raw   = KEY_PREFIX + secrets.token_urlsafe(32)
-    h     = hashlib.sha256(raw.encode()).hexdigest()
-    prefix = raw[:12]   # e.g. "hsa_AbCdEfGh"
+    raw = KEY_PREFIX + secrets.token_urlsafe(32)
+    h = hashlib.sha256(raw.encode()).hexdigest()
+    prefix = raw[:12]  # e.g. "hsa_AbCdEfGh"
     return raw, h, prefix
 
 
@@ -89,10 +91,11 @@ def _get_user_id_from_request(request: Request) -> str:
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
+
 @router.post("/register", response_model=RegisterResponse, status_code=201)
 async def register(
     body: RegisterRequest,
-    db:   AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """
     Public endpoint — register a new email and receive a free-tier API key.
@@ -103,7 +106,7 @@ async def register(
 
     # Find or create user
     result = await db.execute(select(User).where(User.email == email))
-    user   = result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
 
     if not user:
         user = User(
@@ -153,14 +156,12 @@ async def register(
 @router.get("", response_model=list[KeyInfo])
 async def list_keys(
     request: Request,
-    db:      AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """List all active API keys for the authenticated user."""
     user_id = _get_user_id_from_request(request)
-    result  = await db.execute(
-        select(ApiKey)
-        .where(ApiKey.user_id == user_id)
-        .order_by(ApiKey.created_at.desc())
+    result = await db.execute(
+        select(ApiKey).where(ApiKey.user_id == user_id).order_by(ApiKey.created_at.desc())
     )
     keys = result.scalars().all()
     return [
@@ -178,9 +179,9 @@ async def list_keys(
 
 @router.post("", response_model=CreateKeyResponse, status_code=201)
 async def create_key(
-    body:    CreateKeyRequest,
+    body: CreateKeyRequest,
     request: Request,
-    db:      AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Create an additional API key for the authenticated user."""
     user_id = _get_user_id_from_request(request)
@@ -217,16 +218,14 @@ async def create_key(
 
 @router.delete("/{key_id}", status_code=204)
 async def revoke_key(
-    key_id:  str,
+    key_id: str,
     request: Request,
-    db:      AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Revoke (soft-delete) an API key. The key stops working immediately."""
     user_id = _get_user_id_from_request(request)
 
-    result = await db.execute(
-        select(ApiKey).where(ApiKey.id == key_id, ApiKey.user_id == user_id)
-    )
+    result = await db.execute(select(ApiKey).where(ApiKey.id == key_id, ApiKey.user_id == user_id))
     api_key = result.scalar_one_or_none()
     if not api_key:
         raise HTTPException(status_code=404, detail="Key not found.")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OLLA — Hybrid Search. Smarter Answers. A polished terminal client.
+OLLA — OLLA. Smarter Answers. A polished terminal client.
 
 Run it with no arguments for the interactive shell:
 
@@ -27,7 +27,6 @@ import time
 import urllib.error
 import urllib.request
 
-from rich.align import Align
 from rich.box import ROUNDED
 from rich.columns import Columns
 from rich.console import Console, Group
@@ -67,8 +66,7 @@ _LOGO_COLORS = ["bright_cyan", "#3bc9db", "#7c8cf8", "#c084fc"]
 QUOTE = ("The best way to predict\nthe future is to build it.", "— Alan Kay")
 
 # Feedback vocabulary — shared by the shell and the --feedback flag.
-_FB_TYPES = ["useful", "not_useful", "incorrect", "outdated",
-             "bad_source", "missing_context"]
+_FB_TYPES = ["useful", "not_useful", "incorrect", "outdated", "bad_source", "missing_context"]
 _FB_LEVELS = ["answer", "citation", "chunk", "source"]
 
 
@@ -128,19 +126,22 @@ class Settings:
         self.last_results = []
 
     def as_table(self):
-        t = Table(box=ROUNDED, border_style="grey42", show_header=True,
-                  header_style="bold cyan", title="Current settings",
-                  title_style="bold")
+        t = Table(
+            box=ROUNDED,
+            border_style="grey42",
+            show_header=True,
+            header_style="bold cyan",
+            title="Current settings",
+            title_style="bold",
+        )
         t.add_column("Setting", style="bold")
         t.add_column("Value", style="green")
         t.add_column("Change with", style="grey62")
         t.add_row("API host", self.host, "/host <url>")
-        t.add_row("retrieval", "hybrid" if self.hybrid else "standard",
-                  "/hybrid on|off")
+        t.add_row("retrieval", "hybrid" if self.hybrid else "standard", "/hybrid on|off")
         t.add_row("hybrid mode", self.mode, "/mode <name>")
         t.add_row("max sources", str(self.max_results), "/max <n>")
-        t.add_row("show sources", "on" if self.show_sources else "off",
-                  "/sources on|off")
+        t.add_row("show sources", "on" if self.show_sources else "off", "/sources on|off")
         t.add_row("raw JSON", "on" if self.as_json else "off", "/json on|off")
         t.add_row("Ollama host", self.ollama, "/ollama <url>")
         t.add_row("LLM model", self.model, "/model <name>")
@@ -172,10 +173,8 @@ def _logo():
 
 def _feature_panel(settings):
     items = [
-        ("◆", "magenta", "Hybrid Search Engine",
-         "Graphs · Vectors · Web routing"),
-        ("◆", "#7c8cf8", "Built for Developers",
-         "Extensible · Fast · Reliable"),
+        ("◆", "magenta", "OLLA Engine", "Graphs · Vectors · Web routing"),
+        ("◆", "#7c8cf8", "Built for Developers", "Extensible · Fast · Reliable"),
         ("◆", "cyan", "Local API", settings.host),
         ("◆", "bright_cyan", "Model", settings.model),
     ]
@@ -185,10 +184,9 @@ def _feature_panel(settings):
     for icon, color, title, sub in items:
         grid.add_row(
             Text(icon, style=f"bold {color}"),
-            Group(Text(title, style="bold white"),
-                  Text(sub, style="grey54")))
-    return Panel(grid, box=ROUNDED, border_style="grey35",
-                 padding=(0, 2), width=48)
+            Group(Text(title, style="bold white"), Text(sub, style="grey54")),
+        )
+    return Panel(grid, box=ROUNDED, border_style="grey35", padding=(0, 2), width=48)
 
 
 def _getting_started_panel():
@@ -206,9 +204,15 @@ def _getting_started_panel():
     ]
     for c, d in rows:
         grid.add_row(c, d)
-    return Panel(grid, box=ROUNDED, border_style="grey35",
-                 padding=(0, 2), width=62,
-                 title="[bold]🚀  GETTING STARTED", title_align="left")
+    return Panel(
+        grid,
+        box=ROUNDED,
+        border_style="grey35",
+        padding=(0, 2),
+        width=62,
+        title="[bold]🚀  GETTING STARTED",
+        title_align="left",
+    )
 
 
 def _status_panel(health):
@@ -223,20 +227,26 @@ def _status_panel(health):
                 st = comp.get("status", "?")
                 ok = st in ("ok", "healthy")
                 dot = "green" if ok else ("yellow" if st == "slow" else "red")
-                grid.add_row(Text("●", style=dot),
-                             Text(str(name), style="white"),
-                             Text(st.upper(),
-                                  style="green" if ok else "yellow"))
+                grid.add_row(
+                    Text("●", style=dot),
+                    Text(str(name), style="white"),
+                    Text(st.upper(), style="green" if ok else "yellow"),
+                )
         else:
-            grid.add_row(Text("●", style="green"), Text("API Server"),
-                         Text("OK", style="green"))
+            grid.add_row(Text("●", style="green"), Text("API Server"), Text("OK", style="green"))
         border = "grey35"
     else:
-        grid.add_row(Text("●", style="red"), Text("API Server"),
-                     Text("OFFLINE", style="red"))
+        grid.add_row(Text("●", style="red"), Text("API Server"), Text("OFFLINE", style="red"))
         border = "red"
-    return Panel(grid, box=ROUNDED, border_style=border, padding=(0, 2), width=48,
-                 title="[bold]●  STATUS", title_align="left")
+    return Panel(
+        grid,
+        box=ROUNDED,
+        border_style=border,
+        padding=(0, 2),
+        width=48,
+        title="[bold]●  STATUS",
+        title_align="left",
+    )
 
 
 def _quote_panel():
@@ -244,8 +254,15 @@ def _quote_panel():
         Text(QUOTE[0], style="italic grey78"),
         Text(QUOTE[1], style="magenta", justify="right"),
     )
-    return Panel(body, box=ROUNDED, border_style="grey35", padding=(0, 2),
-                 width=62, title="[bold]❝  ETHOS", title_align="left")
+    return Panel(
+        body,
+        box=ROUNDED,
+        border_style="grey35",
+        padding=(0, 2),
+        width=62,
+        title="[bold]❝  ETHOS",
+        title_align="left",
+    )
 
 
 def render_banner(settings, health=None):
@@ -253,18 +270,19 @@ def render_banner(settings, health=None):
     console.print()
     console.print(_logo())
     console.print()
-    console.print(Columns([_feature_panel(settings),
-                           _getting_started_panel()],
-                          padding=(0, 2), expand=False))
-    console.print(Columns([_status_panel(health), _quote_panel()],
-                          padding=(0, 2), expand=False))
+    console.print(
+        Columns([_feature_panel(settings), _getting_started_panel()], padding=(0, 2), expand=False)
+    )
+    console.print(Columns([_status_panel(health), _quote_panel()], padding=(0, 2), expand=False))
     tip = Text.assemble(
         (" 💡 TIP  ", "bold magenta"),
-        ("Type ", "grey62"), ("/ask", "bold cyan"),
+        ("Type ", "grey62"),
+        ("/ask", "bold cyan"),
         (" to ask a question, or ", "grey62"),
-        ("/help", "bold cyan"), (" to see all commands.", "grey62"))
-    console.print(Panel(tip, box=ROUNDED, border_style="grey35",
-                        padding=(0, 1)))
+        ("/help", "bold cyan"),
+        (" to see all commands.", "grey62"),
+    )
+    console.print(Panel(tip, box=ROUNDED, border_style="grey35", padding=(0, 1)))
     console.print()
 
 
@@ -277,11 +295,11 @@ def _highlight_citations(text):
         ch = text[i]
         if ch == "[":
             j = text.find("]", i)
-            if j != -1 and text[i + 1:j].isdigit():
+            if j != -1 and text[i + 1 : j].isdigit():
                 if buf:
                     out.append(buf)
                     buf = ""
-                out.append(text[i:j + 1], style="bold cyan")
+                out.append(text[i : j + 1], style="bold cyan")
                 i = j + 1
                 continue
         buf += ch
@@ -308,22 +326,28 @@ def _answer_panel(answer, model):
         body = _highlight_citations(answer)
     else:
         body = Text.assemble(
-            ("No synthesized answer — the local LLM is not running.\n",
-             "yellow"),
-            ("Start it:  ollama serve   &&   ollama pull " + DEFAULT_MODEL,
-             "grey50"),
+            ("No synthesized answer — the local LLM is not running.\n", "yellow"),
+            ("Start it:  ollama serve   &&   ollama pull " + DEFAULT_MODEL, "grey50"),
         )
     title = f"[bold #c084fc]◆  {NAME} ANSWER"
     if model:
         title += f"  [grey50]({model})"
-    return Panel(body, title=title, title_align="left",
-                 border_style="magenta", box=ROUNDED, padding=(1, 2))
+    return Panel(
+        body, title=title, title_align="left", border_style="magenta", box=ROUNDED, padding=(1, 2)
+    )
 
 
 def _sources_table(results):
-    t = Table(box=ROUNDED, border_style="grey42", show_header=True,
-              header_style="bold", title="Sources", title_style="bold",
-              expand=True, padding=(0, 1))
+    t = Table(
+        box=ROUNDED,
+        border_style="grey42",
+        show_header=True,
+        header_style="bold",
+        title="Sources",
+        title_style="bold",
+        expand=True,
+        padding=(0, 1),
+    )
     t.add_column("#", style="bold cyan", width=4, justify="right")
     t.add_column("Title", style="bold", ratio=3)
     t.add_column("Score", style="grey62", width=8, justify="right")
@@ -345,8 +369,7 @@ def _trace_line(trace):
         if idx:
             t.append(" → ", style="grey42")
         st = step.get("status", "?")
-        color = ("green" if st == "success"
-                 else "yellow" if st in ("fallback", "skipped") else "red")
+        color = "green" if st == "success" else "yellow" if st in ("fallback", "skipped") else "red"
         t.append(step.get("stage", "?"), style="white")
         t.append(f":{st}", style=color)
     return t
@@ -375,9 +398,15 @@ def cmd_health(settings):
         (f"   v{data.get('version', '?')}", "grey50"),
     )
     console.print(
-        Panel(Group(header, Text(""), t),
-              title="[bold]API health", title_align="left",
-              border_style=color, box=ROUNDED, padding=(1, 2)))
+        Panel(
+            Group(header, Text(""), t),
+            title="[bold]API health",
+            title_align="left",
+            border_style=color,
+            box=ROUNDED,
+            padding=(1, 2),
+        )
+    )
 
 
 def cmd_search(settings, query):
@@ -386,8 +415,11 @@ def cmd_search(settings, query):
 
     with console.status("[cyan]searching…", spinner="dots"):
         data = _request(
-            settings.host, "/api/v1/search",
-            {"query": query, "max_results": settings.max_results}, "POST")
+            settings.host,
+            "/api/v1/search",
+            {"query": query, "max_results": settings.max_results},
+            "POST",
+        )
 
     settings.last_query_id = data.get("query_id") or data.get("id")
     settings.last_results = data.get("results", []) or []
@@ -425,9 +457,11 @@ def cmd_search(settings, query):
 def cmd_hybrid(settings, query):
     with console.status("[cyan]hybrid retrieval — routing query…", spinner="dots"):
         data = _request(
-            settings.host, "/api/v1/search/hybrid",
-            {"query": query, "mode": settings.mode,
-             "max_results": settings.max_results}, "POST")
+            settings.host,
+            "/api/v1/search/hybrid",
+            {"query": query, "mode": settings.mode, "max_results": settings.max_results},
+            "POST",
+        )
 
     settings.last_query_id = data.get("query_id") or data.get("id")
     settings.last_results = data.get("results", []) or []
@@ -467,37 +501,51 @@ def cmd_hybrid(settings, query):
     if trace:
         steps = Group(*[Text("· " + str(s), style="grey62") for s in trace])
         console.print()
-        console.print(Panel(steps, title="[bold]Routing", title_align="left",
-                            border_style="grey42", box=ROUNDED, padding=(0, 2)))
+        console.print(
+            Panel(
+                steps,
+                title="[bold]Routing",
+                title_align="left",
+                border_style="grey42",
+                box=ROUNDED,
+                padding=(0, 2),
+            )
+        )
     console.print()
 
 
 def cmd_graph(settings, query):
     with console.status("[cyan]traversing the knowledge graph…", spinner="dots"):
         data = _request(
-            settings.host, "/api/v1/search/graph",
-            {"query": query, "hops": 2, "seed_k": 5, "top_k": 20}, "POST")
+            settings.host,
+            "/api/v1/search/graph",
+            {"query": query, "hops": 2, "seed_k": 5, "top_k": 20},
+            "POST",
+        )
 
     if settings.as_json:
         console.print_json(json.dumps(data))
         return
 
-    console.print(Rule(Text("Knowledge graph — " + query, style="bold white"),
-                        style="orange3"))
-    console.print(_meta_line(
-        [("", f"{data.get('total_chunks', 0)} chunks", "white")]))
+    console.print(Rule(Text("Knowledge graph — " + query, style="bold white"), style="orange3"))
+    console.print(_meta_line([("", f"{data.get('total_chunks', 0)} chunks", "white")]))
     console.print()
 
     seeds = data.get("seed_chunks", [])
     conn = data.get("connected_chunks", [])
     if not seeds and not conn:
-        console.print(Panel(
-            Text.assemble(
-                ("No graph results. Build the graph first:\n", "yellow"),
-                ("1) POST /api/v1/search/embed-and-store\n", "grey62"),
-                ("2) POST /api/v1/graph/build", "grey62"),
-            ),
-            border_style="yellow", box=ROUNDED, padding=(1, 2)))
+        console.print(
+            Panel(
+                Text.assemble(
+                    ("No graph results. Build the graph first:\n", "yellow"),
+                    ("1) POST /api/v1/search/embed-and-store\n", "grey62"),
+                    ("2) POST /api/v1/graph/build", "grey62"),
+                ),
+                border_style="yellow",
+                box=ROUNDED,
+                padding=(1, 2),
+            )
+        )
         console.print()
         return
 
@@ -505,18 +553,18 @@ def cmd_graph(settings, query):
     for c in seeds:
         sim = c.get("similarity")
         sim_s = f"  sim {sim:.3f}" if isinstance(sim, (int, float)) else ""
-        head = Text.assemble(("SEED  ", "bold cyan"),
-                             (str(c.get("title", "chunk")), "bold"),
-                             (sim_s, "grey50"))
+        head = Text.assemble(
+            ("SEED  ", "bold cyan"), (str(c.get("title", "chunk")), "bold"), (sim_s, "grey50")
+        )
         body = Text((c.get("text") or "")[:240], style="grey62")
         blocks.append(Group(head, body, Text("")))
     for c in conn:
-        head = Text.assemble((f"HOP {c.get('hop', 1)}  ", "bold yellow"),
-                             (str(c.get("title", "chunk")), "bold"))
+        head = Text.assemble(
+            (f"HOP {c.get('hop', 1)}  ", "bold yellow"), (str(c.get("title", "chunk")), "bold")
+        )
         body = Text((c.get("text") or "")[:240], style="grey62")
         blocks.append(Group(head, body, Text("")))
-    console.print(Panel(Group(*blocks), border_style="grey42", box=ROUNDED,
-                        padding=(1, 2)))
+    console.print(Panel(Group(*blocks), border_style="grey42", box=ROUNDED, padding=(1, 2)))
     console.print()
 
 
@@ -528,10 +576,12 @@ def cmd_feedback_stats(settings):
     rate = data.get("satisfaction_rate", 0.0)
     rate_c = "green" if rate >= 0.6 else ("yellow" if rate >= 0.3 else "red")
 
-    header = _meta_line([
-        ("", f"{total} events", "white"),
-        ("satisfaction", f"{rate:.0%}", rate_c),
-    ])
+    header = _meta_line(
+        [
+            ("", f"{total} events", "white"),
+            ("satisfaction", f"{rate:.0%}", rate_c),
+        ]
+    )
 
     parts = [header, Text("")]
 
@@ -554,15 +604,20 @@ def cmd_feedback_stats(settings):
         return Group(Text(label, style=f"bold {color}"), t, Text(""))
 
     if data.get("best_sources"):
-        parts.append(_src_table("Top-trust sources", "green",
-                                data["best_sources"]))
+        parts.append(_src_table("Top-trust sources", "green", data["best_sources"]))
     if data.get("worst_sources"):
-        parts.append(_src_table("Low-trust sources", "yellow",
-                                data["worst_sources"]))
+        parts.append(_src_table("Low-trust sources", "yellow", data["worst_sources"]))
 
-    console.print(Panel(Group(*parts), title="[bold]Feedback analytics",
-                        title_align="left", border_style="cyan",
-                        box=ROUNDED, padding=(1, 2)))
+    console.print(
+        Panel(
+            Group(*parts),
+            title="[bold]Feedback analytics",
+            title_align="left",
+            border_style="cyan",
+            box=ROUNDED,
+            padding=(1, 2),
+        )
+    )
 
 
 def cmd_feedback(settings, args):
@@ -577,23 +632,26 @@ def cmd_feedback(settings, args):
     }
     data = _request(settings.host, "/api/v1/feedback", payload, "POST")
     lines = [
-        Text.assemble(("Feedback recorded  ", "bold green"),
-                      (str(data.get("feedback_id", "")), "grey50")),
+        Text.assemble(
+            ("Feedback recorded  ", "bold green"), (str(data.get("feedback_id", "")), "grey50")
+        ),
         Text(f"{args.level} / {args.fb_type}", style="grey62"),
     ]
     for effect in data.get("effects", []):
         lines.append(Text("  · " + str(effect), style="grey62"))
-    console.print(Panel(Group(*lines), border_style="green", box=ROUNDED,
-                        padding=(1, 2)))
+    console.print(Panel(Group(*lines), border_style="green", box=ROUNDED, padding=(1, 2)))
 
 
 def cmd_test_llm(settings):
-    console.print(Rule(Text("LLM diagnostic", style="bold white"),
-                       style="orange3"))
-    console.print(_meta_line([
-        ("", settings.ollama, "white"),
-        ("model", settings.model, "cyan"),
-    ]))
+    console.print(Rule(Text("LLM diagnostic", style="bold white"), style="orange3"))
+    console.print(
+        _meta_line(
+            [
+                ("", settings.ollama, "white"),
+                ("model", settings.model, "cyan"),
+            ]
+        )
+    )
     console.print()
 
     steps = []
@@ -602,64 +660,78 @@ def cmd_test_llm(settings):
             with _OPENER.open(settings.ollama + "/api/tags", timeout=10) as r:
                 tags = json.loads(r.read())
         models = [m.get("name", "") for m in tags.get("models", [])]
-        steps.append(Text.assemble(
-            ("  [1] ", "bold green"),
-            (f"Ollama reachable ({len(models)} model(s))", "white")))
+        steps.append(
+            Text.assemble(
+                ("  [1] ", "bold green"), (f"Ollama reachable ({len(models)} model(s))", "white")
+            )
+        )
         base = settings.model.split(":")[0]
         if any(m.split(":")[0] == base for m in models):
-            steps.append(Text.assemble(
-                ("  [2] ", "bold green"),
-                (f"model '{settings.model}' is available", "white")))
+            steps.append(
+                Text.assemble(
+                    ("  [2] ", "bold green"), (f"model '{settings.model}' is available", "white")
+                )
+            )
         else:
-            steps.append(Text.assemble(
-                ("  [2] ", "bold red"),
-                (f"model '{settings.model}' NOT found", "white")))
-            steps.append(Text(f"      available: {', '.join(models) or 'none'}",
-                              style="grey50"))
-            steps.append(Text(f"      fix:  ollama pull {settings.model}",
-                              style="yellow"))
-            console.print(Panel(Group(*steps), border_style="red",
-                                box=ROUNDED, padding=(1, 2)))
+            steps.append(
+                Text.assemble(
+                    ("  [2] ", "bold red"), (f"model '{settings.model}' NOT found", "white")
+                )
+            )
+            steps.append(Text(f"      available: {', '.join(models) or 'none'}", style="grey50"))
+            steps.append(Text(f"      fix:  ollama pull {settings.model}", style="yellow"))
+            console.print(Panel(Group(*steps), border_style="red", box=ROUNDED, padding=(1, 2)))
             return
     except Exception as e:  # noqa: BLE001
-        steps.append(Text.assemble(("  [1] ", "bold red"),
-                                   (f"Ollama NOT reachable: {e}", "white")))
-        steps.append(Text("      fix:  start the Ollama app or run `ollama serve`",
-                          style="yellow"))
-        console.print(Panel(Group(*steps), border_style="red", box=ROUNDED,
-                            padding=(1, 2)))
+        steps.append(Text.assemble(("  [1] ", "bold red"), (f"Ollama NOT reachable: {e}", "white")))
+        steps.append(Text("      fix:  start the Ollama app or run `ollama serve`", style="yellow"))
+        console.print(Panel(Group(*steps), border_style="red", box=ROUNDED, padding=(1, 2)))
         return
 
     t0 = time.time()
     try:
         with console.status("[cyan]generating a test answer…", spinner="dots"):
-            body = json.dumps({
-                "model": settings.model, "prompt": "Reply with exactly: OK",
-                "stream": False, "options": {"num_predict": 10}}).encode()
+            body = json.dumps(
+                {
+                    "model": settings.model,
+                    "prompt": "Reply with exactly: OK",
+                    "stream": False,
+                    "options": {"num_predict": 10},
+                }
+            ).encode()
             req = urllib.request.Request(
-                settings.ollama + "/api/generate", data=body,
-                headers={"Content-Type": "application/json"}, method="POST")
+                settings.ollama + "/api/generate",
+                data=body,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
             with _OPENER.open(req, timeout=240) as r:
                 out = json.loads(r.read())
         dt = time.time() - t0
         reply = (out.get("response") or "").strip()
-        steps.append(Text.assemble(
-            ("  [3] ", "bold green"),
-            (f"generation OK in {dt:.1f}s  ", "white"),
-            (f"-> {reply[:40]}", "grey50")))
+        steps.append(
+            Text.assemble(
+                ("  [3] ", "bold green"),
+                (f"generation OK in {dt:.1f}s  ", "white"),
+                (f"-> {reply[:40]}", "grey50"),
+            )
+        )
         steps.append(Text(""))
-        steps.append(Text("  LLM step is working — run a search for "
-                          "synthesized answers.", style="green"))
+        steps.append(
+            Text("  LLM step is working — run a search for synthesized answers.", style="green")
+        )
         if dt > 30:
-            steps.append(Text("  (first call is slow — the model loads into "
-                              "RAM; later calls are fast)", style="grey50"))
+            steps.append(
+                Text(
+                    "  (first call is slow — the model loads into RAM; later calls are fast)",
+                    style="grey50",
+                )
+            )
         border = "green"
     except Exception as e:  # noqa: BLE001
-        steps.append(Text.assemble(("  [3] ", "bold red"),
-                                   (f"generation failed: {e}", "white")))
+        steps.append(Text.assemble(("  [3] ", "bold red"), (f"generation failed: {e}", "white")))
         border = "red"
-    console.print(Panel(Group(*steps), border_style=border, box=ROUNDED,
-                        padding=(1, 2)))
+    console.print(Panel(Group(*steps), border_style=border, box=ROUNDED, padding=(1, 2)))
 
 
 _FB_LABELS = {
@@ -671,10 +743,19 @@ _FB_LABELS = {
     "missing_context": "important context was missing",
 }
 _FB_SHORTCUTS = {
-    "useful": "useful", "good": "useful", "up": "useful", "yes": "useful",
-    "not_useful": "not_useful", "bad": "not_useful", "down": "not_useful",
-    "no": "not_useful", "incorrect": "incorrect", "wrong": "incorrect",
-    "outdated": "outdated", "stale": "outdated", "bad_source": "bad_source",
+    "useful": "useful",
+    "good": "useful",
+    "up": "useful",
+    "yes": "useful",
+    "not_useful": "not_useful",
+    "bad": "not_useful",
+    "down": "not_useful",
+    "no": "not_useful",
+    "incorrect": "incorrect",
+    "wrong": "incorrect",
+    "outdated": "outdated",
+    "stale": "outdated",
+    "bad_source": "bad_source",
     "missing_context": "missing_context",
 }
 
@@ -686,11 +767,20 @@ def _ask_feedback_type(title):
     menu.add_column(style="white")
     for i, key in enumerate(_FB_TYPES, 1):
         menu.add_row(str(i), f"{key}  [grey50]\u2014 {_FB_LABELS[key]}[/]")
-    console.print(Panel(menu, title=f"[bold]{title}", title_align="left",
-                        border_style="magenta", box=ROUNDED, padding=(1, 2)))
+    console.print(
+        Panel(
+            menu,
+            title=f"[bold]{title}",
+            title_align="left",
+            border_style="magenta",
+            box=ROUNDED,
+            padding=(1, 2),
+        )
+    )
     try:
-        raw = console.input("  pick [bold cyan]1-6[/] (Enter to cancel) "
-                            "[bold cyan]\u276f[/] ").strip()
+        raw = console.input(
+            "  pick [bold cyan]1-6[/] (Enter to cancel) [bold cyan]\u276f[/] "
+        ).strip()
     except (EOFError, KeyboardInterrupt):
         raw = ""
     if not raw:
@@ -709,32 +799,31 @@ def _ask_feedback_type(title):
 def _ask_comment():
     """Prompt for an optional free-text comment; return it or None."""
     try:
-        return console.input(
-            "  comment [grey50](optional, Enter to skip)[/] "
-            "[bold cyan]\u276f[/] ").strip() or None
+        return (
+            console.input(
+                "  comment [grey50](optional, Enter to skip)[/] [bold cyan]\u276f[/] "
+            ).strip()
+            or None
+        )
     except (EOFError, KeyboardInterrupt):
         return None
 
 
 def _show_feedback_result(data, headline, detail):
-    lines = [Text(headline, style="bold green"),
-             Text(detail, style="grey62")]
+    lines = [Text(headline, style="bold green"), Text(detail, style="grey62")]
     if data.get("feedback_id"):
         lines.append(Text(f"id {data['feedback_id']}", style="grey50"))
     for effect in data.get("effects", []):
         lines.append(Text("  \u00b7 " + str(effect), style="grey62"))
-    console.print(Panel(Group(*lines), border_style="green", box=ROUNDED,
-                        padding=(1, 2)))
+    console.print(Panel(Group(*lines), border_style="green", box=ROUNDED, padding=(1, 2)))
 
 
 def _feedback_answer(settings, quick):
     """Rate the synthesized answer of the most recent query."""
     if not settings.last_query_id:
-        _error_panel("No recent answer to rate \u2014 run a search first, "
-                     "then use /feedback.")
+        _error_panel("No recent answer to rate \u2014 run a search first, then use /feedback.")
         return
-    fb_type = _FB_SHORTCUTS.get(quick.strip().lower().replace("-", "_")) \
-        if quick else None
+    fb_type = _FB_SHORTCUTS.get(quick.strip().lower().replace("-", "_")) if quick else None
     if fb_type is None:
         fb_type = _ask_feedback_type("\u25c6  Rate the last answer")
     if fb_type is None:
@@ -742,20 +831,24 @@ def _feedback_answer(settings, quick):
         return
     comment = _ask_comment()
     payload = {
-        "level": "answer", "feedback_type": fb_type,
-        "query_id": settings.last_query_id, "result_id": None,
-        "chunk_id": None, "source_url": None, "comment": comment,
+        "level": "answer",
+        "feedback_type": fb_type,
+        "query_id": settings.last_query_id,
+        "result_id": None,
+        "chunk_id": None,
+        "source_url": None,
+        "comment": comment,
     }
     data = _request(settings.host, "/api/v1/feedback", payload, "POST")
-    _show_feedback_result(data, "\u2713  Thanks \u2014 answer feedback recorded",
-                          f"answer \u00b7 {fb_type}")
+    _show_feedback_result(
+        data, "\u2713  Thanks \u2014 answer feedback recorded", f"answer \u00b7 {fb_type}"
+    )
 
 
 def _feedback_source(settings):
     """Rate one of the sources / sites used by the most recent search."""
     if not settings.last_results:
-        _error_panel("No sources to rate \u2014 run a search first, "
-                     "then use /feedback.")
+        _error_panel("No sources to rate \u2014 run a search first, then use /feedback.")
         return
     listing = Table.grid(padding=(0, 2))
     listing.add_column(style="bold cyan", justify="right")
@@ -764,19 +857,26 @@ def _feedback_source(settings):
         cell = Text(str(r.get("title", "untitled")), style="white")
         cell.append("\n" + str(r.get("url", "")), style="blue")
         listing.add_row(str(r.get("rank", "?")), cell)
-    console.print(Panel(listing, title="[bold]\u25c6  Which source / site?",
-                        title_align="left", border_style="magenta",
-                        box=ROUNDED, padding=(1, 2)))
+    console.print(
+        Panel(
+            listing,
+            title="[bold]\u25c6  Which source / site?",
+            title_align="left",
+            border_style="magenta",
+            box=ROUNDED,
+            padding=(1, 2),
+        )
+    )
     try:
-        raw = console.input("  pick a source [bold cyan]#[/] (Enter to cancel) "
-                            "[bold cyan]\u276f[/] ").strip()
+        raw = console.input(
+            "  pick a source [bold cyan]#[/] (Enter to cancel) [bold cyan]\u276f[/] "
+        ).strip()
     except (EOFError, KeyboardInterrupt):
         raw = ""
     if not raw:
         console.print("[grey62]  feedback cancelled[/]")
         return
-    chosen = next((r for r in settings.last_results
-                   if str(r.get("rank")) == raw), None)
+    chosen = next((r for r in settings.last_results if str(r.get("rank")) == raw), None)
     if chosen is None:
         _error_panel(f"'{raw}' is not one of the listed sources")
         return
@@ -786,13 +886,20 @@ def _feedback_source(settings):
         return
     comment = _ask_comment()
     payload = {
-        "level": "source", "feedback_type": fb_type,
-        "query_id": settings.last_query_id, "result_id": None,
-        "chunk_id": None, "source_url": chosen.get("url"), "comment": comment,
+        "level": "source",
+        "feedback_type": fb_type,
+        "query_id": settings.last_query_id,
+        "result_id": None,
+        "chunk_id": None,
+        "source_url": chosen.get("url"),
+        "comment": comment,
     }
     data = _request(settings.host, "/api/v1/feedback", payload, "POST")
-    _show_feedback_result(data, "\u2713  Thanks \u2014 source feedback recorded",
-                          f"source \u00b7 {fb_type}  \u00b7  {chosen.get('url')}")
+    _show_feedback_result(
+        data,
+        "\u2713  Thanks \u2014 source feedback recorded",
+        f"source \u00b7 {fb_type}  \u00b7  {chosen.get('url')}",
+    )
 
 
 def cmd_feedback_shell(settings, arg):
@@ -804,12 +911,14 @@ def cmd_feedback_shell(settings, arg):
     if a in ("source", "sources", "src", "site", "sites", "s"):
         _feedback_source(settings)
         return
-    if a in _FB_SHORTCUTS:        # e.g. `/feedback useful` -> quick answer rating
+    if a in _FB_SHORTCUTS:  # e.g. `/feedback useful` -> quick answer rating
         _feedback_answer(settings, a)
         return
     if a:
-        _error_panel(f"Unknown feedback option '{arg}'.  Use /feedback, "
-                     "/feedback answer, or /feedback source.")
+        _error_panel(
+            f"Unknown feedback option '{arg}'.  Use /feedback, "
+            "/feedback answer, or /feedback source."
+        )
         return
 
     # No argument given -> ask what to rate.
@@ -820,14 +929,25 @@ def cmd_feedback_shell(settings, arg):
     choice.add_column(style="bold cyan", justify="right")
     choice.add_column(style="white")
     choice.add_row("1", "the answer OLLA gave")
-    choice.add_row("2", f"a source / site it used  "
-                        f"[grey50]({len(settings.last_results)} available)[/]")
-    console.print(Panel(choice, title="[bold]\u25c6  What do you want to rate?",
-                        title_align="left", border_style="magenta",
-                        box=ROUNDED, padding=(1, 2)))
+    choice.add_row(
+        "2", f"a source / site it used  [grey50]({len(settings.last_results)} available)[/]"
+    )
+    console.print(
+        Panel(
+            choice,
+            title="[bold]\u25c6  What do you want to rate?",
+            title_align="left",
+            border_style="magenta",
+            box=ROUNDED,
+            padding=(1, 2),
+        )
+    )
     try:
-        pick = console.input("  pick [bold cyan]1-2[/] (Enter to cancel) "
-                             "[bold cyan]\u276f[/] ").strip().lower()
+        pick = (
+            console.input("  pick [bold cyan]1-2[/] (Enter to cancel) [bold cyan]\u276f[/] ")
+            .strip()
+            .lower()
+        )
     except (EOFError, KeyboardInterrupt):
         pick = ""
     if pick in ("1", "answer", "a"):
@@ -839,9 +959,15 @@ def cmd_feedback_shell(settings, arg):
 
 
 def render_help():
-    t = Table(box=ROUNDED, border_style="grey42", show_header=True,
-              header_style="bold cyan", title="OLLA commands",
-              title_style="bold", expand=True)
+    t = Table(
+        box=ROUNDED,
+        border_style="grey42",
+        show_header=True,
+        header_style="bold cyan",
+        title="OLLA commands",
+        title_style="bold",
+        expand=True,
+    )
     t.add_column("Command", style="bold cyan", no_wrap=True)
     t.add_column("What it does")
     rows = [
@@ -984,8 +1110,7 @@ def interactive_shell(settings):
     while True:
         try:
             tag = "hybrid" if settings.hybrid else "ask"
-            prompt = (f"\n  [bold #c084fc]{NAME}[/] [grey50]{tag}[/] "
-                      f"[bold cyan]❯[/] ")
+            prompt = f"\n  [bold #c084fc]{NAME}[/] [grey50]{tag}[/] [bold cyan]❯[/] "
             line = console.input(prompt)
         except (EOFError, KeyboardInterrupt):
             console.print("\n[grey62]bye 👋[/]")
@@ -997,49 +1122,55 @@ def interactive_shell(settings):
 def build_parser():
     p = argparse.ArgumentParser(
         prog="cli.py",
-        description="OLLA — query the Hybrid Search API and get an "
-                    "LLM-synthesized answer. Run with no arguments for the "
-                    "interactive shell.")
+        description="OLLA — query the OLLA API and get an "
+        "LLM-synthesized answer. Run with no arguments for the "
+        "interactive shell.",
+    )
     p.add_argument("query", nargs="?", help="the question to ask")
-    p.add_argument("--host", default=DEFAULT_HOST,
-                   help="API host (default %(default)s)")
-    p.add_argument("--max", type=int, default=5, dest="max_results",
-                   help="max sources to retrieve (default 5)")
-    p.add_argument("--graph", action="store_true",
-                   help="query the knowledge graph")
-    p.add_argument("--hybrid", action="store_true",
-                   help="use confidence-routed hybrid retrieval")
-    p.add_argument("--mode", default="auto",
-                   choices=["auto", "fast", "fresh", "hybrid", "deep"],
-                   help="hybrid retrieval mode (default %(default)s)")
-    p.add_argument("--json", action="store_true", dest="as_json",
-                   help="raw JSON output")
-    p.add_argument("--no-sources", action="store_true",
-                   help="answer only, hide sources")
-    p.add_argument("--health", action="store_true",
-                   help="check API health and exit")
-    p.add_argument("--test-llm", action="store_true",
-                   help="diagnose the local Ollama LLM and exit")
-    p.add_argument("--ollama", default=DEFAULT_OLLAMA,
-                   help="Ollama host for --test-llm (default %(default)s)")
-    p.add_argument("--model", default=DEFAULT_MODEL,
-                   help="Ollama model for --test-llm (default %(default)s)")
-    p.add_argument("--feedback", action="store_true",
-                   help="submit feedback (requires --level and --type)")
-    p.add_argument("--feedback-stats", action="store_true",
-                   dest="feedback_stats",
-                   help="show aggregate feedback analytics and exit")
-    p.add_argument("--level", choices=["answer", "citation", "chunk", "source"],
-                   help="feedback level")
-    p.add_argument("--type", dest="fb_type",
-                   choices=["useful", "not_useful", "incorrect",
-                            "outdated", "bad_source", "missing_context"],
-                   help="feedback signal")
+    p.add_argument("--host", default=DEFAULT_HOST, help="API host (default %(default)s)")
+    p.add_argument(
+        "--max", type=int, default=5, dest="max_results", help="max sources to retrieve (default 5)"
+    )
+    p.add_argument("--graph", action="store_true", help="query the knowledge graph")
+    p.add_argument("--hybrid", action="store_true", help="use confidence-routed hybrid retrieval")
+    p.add_argument(
+        "--mode",
+        default="auto",
+        choices=["auto", "fast", "fresh", "hybrid", "deep"],
+        help="hybrid retrieval mode (default %(default)s)",
+    )
+    p.add_argument("--json", action="store_true", dest="as_json", help="raw JSON output")
+    p.add_argument("--no-sources", action="store_true", help="answer only, hide sources")
+    p.add_argument("--health", action="store_true", help="check API health and exit")
+    p.add_argument("--test-llm", action="store_true", help="diagnose the local Ollama LLM and exit")
+    p.add_argument(
+        "--ollama", default=DEFAULT_OLLAMA, help="Ollama host for --test-llm (default %(default)s)"
+    )
+    p.add_argument(
+        "--model", default=DEFAULT_MODEL, help="Ollama model for --test-llm (default %(default)s)"
+    )
+    p.add_argument(
+        "--feedback", action="store_true", help="submit feedback (requires --level and --type)"
+    )
+    p.add_argument(
+        "--feedback-stats",
+        action="store_true",
+        dest="feedback_stats",
+        help="show aggregate feedback analytics and exit",
+    )
+    p.add_argument(
+        "--level", choices=["answer", "citation", "chunk", "source"], help="feedback level"
+    )
+    p.add_argument(
+        "--type",
+        dest="fb_type",
+        choices=["useful", "not_useful", "incorrect", "outdated", "bad_source", "missing_context"],
+        help="feedback signal",
+    )
     p.add_argument("--query-id", dest="query_id", help="related query UUID")
     p.add_argument("--result-id", dest="result_id", help="related result UUID")
     p.add_argument("--chunk-id", dest="chunk_id", help="related chunk UUID")
-    p.add_argument("--source-url", dest="source_url",
-                   help="related source URL")
+    p.add_argument("--source-url", dest="source_url", help="related source URL")
     p.add_argument("--comment", help="optional free-text feedback note")
     return p
 
@@ -1058,8 +1189,7 @@ def main():
     settings.show_sources = not args.no_sources
     settings.as_json = args.as_json
 
-    one_shot = any([args.query, args.health, args.test_llm,
-                    args.feedback, args.feedback_stats])
+    one_shot = any([args.query, args.health, args.test_llm, args.feedback, args.feedback_stats])
     if not one_shot:
         interactive_shell(settings)
         return

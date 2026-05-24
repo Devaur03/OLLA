@@ -118,8 +118,12 @@ class GraphService:
     # ---------------------------------------------------------- traverse
 
     async def graph_search(
-        self, query_embedding: list[float], hops: int = 2,
-        seed_k: int = 5, top_k: int = 20, min_similarity: float = 0.6,
+        self,
+        query_embedding: list[float],
+        hops: int = 2,
+        seed_k: int = 5,
+        top_k: int = 20,
+        min_similarity: float = 0.6,
     ) -> dict:
         """
         Multi-hop retrieval. Find seed chunks by vector similarity to the query,
@@ -148,8 +152,12 @@ class GraphService:
         seed_ids = [r.id for r in seeds if float(r.similarity) >= min_similarity]
         seed_chunks = [
             {
-                "id": r.id, "text": r.text, "url": r.url, "title": r.title,
-                "similarity": round(float(r.similarity), 4), "hop": 0,
+                "id": r.id,
+                "text": r.text,
+                "url": r.url,
+                "title": r.title,
+                "similarity": round(float(r.similarity), 4),
+                "hop": 0,
             }
             for r in seeds
             if float(r.similarity) >= min_similarity
@@ -190,10 +198,16 @@ class GraphService:
                 cand = n.chunk_b_id if n.chunk_a_id in frontier else n.chunk_a_id
                 if cand in {c["id"] for c in expanded}:
                     continue
-                expanded.append({
-                    "id": cand, "text": n.text, "url": n.url, "title": n.title,
-                    "edge_weight": round(float(n.weight), 4), "hop": hop,
-                })
+                expanded.append(
+                    {
+                        "id": cand,
+                        "text": n.text,
+                        "url": n.url,
+                        "title": n.title,
+                        "edge_weight": round(float(n.weight), 4),
+                        "hop": hop,
+                    }
+                )
             frontier = next_frontier
 
         return {

@@ -23,6 +23,7 @@ router = APIRouter(prefix="/api/v1/workspaces", tags=["workspaces"])
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 
+
 class CreateWorkspaceRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Workspace name")
 
@@ -41,6 +42,7 @@ class CreateWorkspaceResponse(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _get_user_id(request: Request) -> str:
     user_id = getattr(request.state, "user_id", None)
     if not user_id:
@@ -49,6 +51,7 @@ def _get_user_id(request: Request) -> str:
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+
 
 @router.post("", response_model=CreateWorkspaceResponse, status_code=201)
 async def create_workspace(
@@ -87,9 +90,7 @@ async def list_workspaces(
     """List all workspaces the authenticated user owns."""
     user_id = _get_user_id(request)
     result = await db.execute(
-        select(Workspace)
-        .where(Workspace.owner_id == user_id)
-        .order_by(Workspace.created_at.desc())
+        select(Workspace).where(Workspace.owner_id == user_id).order_by(Workspace.created_at.desc())
     )
     workspaces = result.scalars().all()
     return [

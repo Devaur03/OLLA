@@ -6,6 +6,7 @@ fixtures live in the conftest of the layer that needs them:
   tests/e2e/conftest.py          — HTTPX client wired to the FastAPI app
   tests/integration/conftest.py  — real AsyncSession (needs Postgres)
 """
+
 import pytest
 
 

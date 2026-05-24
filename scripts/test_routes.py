@@ -297,7 +297,7 @@ async def run():
 
 if __name__ == "__main__":
     print("="*64)
-    print("  Hybrid Search API — Route Integration Test")
+    print("  OLLA API — Route Integration Test")
     print("  DB:    SQLite in-memory (aiosqlite)")
     print("  Cache: fakeredis")
     print("  Auth:  REQUIRE_AUTH=false + DB key lookup enabled")

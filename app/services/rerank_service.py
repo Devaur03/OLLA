@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class RerankService:
     """Cross-encoder reranker with safe fallback when the model is absent."""
 
-    _model = None             # class-level cache — load the model once
+    _model = None  # class-level cache — load the model once
     _load_failed = False
 
     def __init__(self):
@@ -46,19 +46,16 @@ class RerankService:
             return False
         try:
             from sentence_transformers import CrossEncoder
+
             RerankService._model = CrossEncoder(self.model_name)
             logger.info("RerankService: loaded cross-encoder %s", self.model_name)
             return True
         except Exception as e:  # noqa: BLE001
             RerankService._load_failed = True
-            logger.warning(
-                "RerankService: reranker unavailable (%s) — passthrough mode", e
-            )
+            logger.warning("RerankService: reranker unavailable (%s) — passthrough mode", e)
             return False
 
-    async def rerank(
-        self, query: str, items: list, text_of=None, top_k: int | None = None
-    ) -> list:
+    async def rerank(self, query: str, items: list, text_of=None, top_k: int | None = None) -> list:
         """
         Reorder `items` by cross-encoder relevance to `query`.
 
@@ -76,12 +73,8 @@ class RerankService:
         pairs = [(query, extract(it) or "") for it in items]
         try:
             loop = asyncio.get_event_loop()
-            scores = await loop.run_in_executor(
-                None, lambda: RerankService._model.predict(pairs)
-            )
-            ranked = [it for _, it in sorted(
-                zip(scores, items), key=lambda p: p[0], reverse=True
-            )]
+            scores = await loop.run_in_executor(None, lambda: RerankService._model.predict(pairs))
+            ranked = [it for _, it in sorted(zip(scores, items), key=lambda p: p[0], reverse=True)]
         except Exception as e:  # noqa: BLE001
             logger.warning("RerankService: predict failed (%s) -- passthrough", e)
             ranked = list(items)

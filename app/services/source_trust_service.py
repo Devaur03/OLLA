@@ -77,7 +77,9 @@ class SourceTrustService:
         try:
             row = (
                 await self.db.execute(
-                    text("SELECT trust_score FROM source_trust WHERE workspace_id = :ws AND domain = :d"),
+                    text(
+                        "SELECT trust_score FROM source_trust WHERE workspace_id = :ws AND domain = :d"
+                    ),
                     {"ws": self.workspace_id, "d": domain},
                 )
             ).first()
@@ -132,13 +134,18 @@ class SourceTrustService:
                     """
                 ),
                 {
-                    "ws": self.workspace_id, "d": domain, "delta": delta, "pos": positive, "neg": negative,
-                    "bad": bad, "outd": outdated, "lo": _MIN_TRUST, "hi": _MAX_TRUST,
+                    "ws": self.workspace_id,
+                    "d": domain,
+                    "delta": delta,
+                    "pos": positive,
+                    "neg": negative,
+                    "bad": bad,
+                    "outd": outdated,
+                    "lo": _MIN_TRUST,
+                    "hi": _MAX_TRUST,
                 },
             )
-            logger.info(
-                "SourceTrustService: %s %+.2f on %r", domain, delta, feedback_type
-            )
+            logger.info("SourceTrustService: %s %+.2f on %r", domain, delta, feedback_type)
         except Exception as e:  # noqa: BLE001
             logger.warning("SourceTrustService: apply_feedback failed: %s", e)
 

@@ -47,8 +47,7 @@ def test_empty_results_returns_empty(svc):
 
 def test_results_are_sorted_descending(svc):
     results = [
-        make_result(f"Result {i}", f"Content about topic number {i} " * 10)
-        for i in range(5)
+        make_result(f"Result {i}", f"Content about topic number {i} " * 10) for i in range(5)
     ]
     ranked = svc.rank("topic content", results)
     scores = [r.score for r in ranked]

@@ -15,11 +15,10 @@ class ChunkEdge(Base):
 
     Enables multi-hop graph-traversal retrieval that pure vector search misses.
     """
+
     __tablename__ = "chunk_edges"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     chunk_a_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("chunks.id", ondelete="CASCADE"), nullable=False
     )

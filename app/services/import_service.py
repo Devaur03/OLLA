@@ -51,7 +51,9 @@ class ImportService:
 
         logger.info(
             "ImportService: imported %d trust rows, %d feedback rows, %d errors",
-            summary["source_trust"], summary["feedback"], len(summary["errors"]),
+            summary["source_trust"],
+            summary["feedback"],
+            len(summary["errors"]),
         )
         return summary
 

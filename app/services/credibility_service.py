@@ -11,7 +11,6 @@ DOMAIN_CREDIBILITY: dict[str, float] = {
     "nature.com": 0.95,
     "ieee.org": 0.92,
     "acm.org": 0.92,
-
     # Official documentation
     "docs.python.org": 0.95,
     "docs.microsoft.com": 0.92,
@@ -23,12 +22,10 @@ DOMAIN_CREDIBILITY: dict[str, float] = {
     "docs.pydantic.dev": 0.90,
     "redis.io": 0.90,
     "postgresql.org": 0.90,
-
     # Established references
     "wikipedia.org": 0.80,
     "github.com": 0.85,
     "stackoverflow.com": 0.82,
-
     # Quality tech blogs
     "aws.amazon.com": 0.88,
     "cloud.google.com": 0.88,
@@ -40,7 +37,6 @@ DOMAIN_CREDIBILITY: dict[str, float] = {
     "medium.com": 0.60,
     "dev.to": 0.65,
     "hashnode.com": 0.62,
-
     # Lower credibility
     "reddit.com": 0.50,
     "quora.com": 0.45,

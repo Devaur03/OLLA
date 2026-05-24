@@ -71,9 +71,7 @@ async def graph_build(
 @router.get("/graph/stats")
 async def graph_stats(db: AsyncSession = Depends(get_db_session)):
     """Return edge counts and memory-tier stats for the dashboard."""
-    edge_row = (
-        await db.execute(text("SELECT COUNT(*) AS n FROM chunk_edges"))
-    ).fetchone()
+    edge_row = (await db.execute(text("SELECT COUNT(*) AS n FROM chunk_edges"))).fetchone()
     memory = MemoryService(db)
     tiers = await memory.stats()
     return {

@@ -116,8 +116,9 @@ class AnswerService:
             answer = (data.get("message", {}) or {}).get("content", "").strip()
             if not answer:
                 return AnswerResult(model=self.model, error="LLM returned an empty answer")
-            logger.info("AnswerService: synthesized answer via %s (%d chars)",
-                        self.model, len(answer))
+            logger.info(
+                "AnswerService: synthesized answer via %s (%d chars)", self.model, len(answer)
+            )
             return AnswerResult(answer=answer, model=self.model, ok=True)
 
         except httpx.ConnectError:
@@ -144,8 +145,7 @@ class AnswerService:
                 pass
             if e.response.status_code == 404:
                 detail = (
-                    f"model '{self.model}' not found — run "
-                    f"`ollama pull {self.model}`. {detail}"
+                    f"model '{self.model}' not found — run `ollama pull {self.model}`. {detail}"
                 )
             msg = f"Ollama HTTP {e.response.status_code}: {detail}"
             logger.warning("AnswerService: %s", msg)
@@ -171,13 +171,13 @@ class AnswerService:
                 return AnswerResult(
                     model=self.model,
                     error=f"Ollama is up but model '{self.model}' is not pulled. "
-                          f"Run: ollama pull {self.model}",
+                    f"Run: ollama pull {self.model}",
                 )
-            return AnswerResult(model=self.model, ok=True,
-                                answer=f"Ollama OK — {len(tags)} model(s) available")
+            return AnswerResult(
+                model=self.model, ok=True, answer=f"Ollama OK — {len(tags)} model(s) available"
+            )
         except httpx.ConnectError:
-            return AnswerResult(model=self.model,
-                                error=f"Ollama not reachable at {self.base_url}")
+            return AnswerResult(model=self.model, error=f"Ollama not reachable at {self.base_url}")
         except Exception as e:  # noqa: BLE001
             return AnswerResult(model=self.model, error=str(e) or repr(e))
 

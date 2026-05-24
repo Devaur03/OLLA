@@ -21,11 +21,51 @@ logger = logging.getLogger(__name__)
 
 # Words to ignore when tokenizing (common English stop words)
 STOP_WORDS = {
-    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to",
-    "for", "of", "with", "by", "from", "is", "are", "was", "were",
-    "be", "been", "being", "have", "has", "had", "do", "does", "did",
-    "will", "would", "could", "should", "may", "might", "can", "this",
-    "that", "these", "those", "it", "its", "not", "no", "nor", "so",
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "could",
+    "should",
+    "may",
+    "might",
+    "can",
+    "this",
+    "that",
+    "these",
+    "those",
+    "it",
+    "its",
+    "not",
+    "no",
+    "nor",
+    "so",
 }
 
 
@@ -138,8 +178,4 @@ class RankService:
         Tokenize text into lowercase words, removing stop words and short tokens.
         """
         words = text.lower().split()
-        return [
-            w.strip(".,!?;:\"'()[]{}")
-            for w in words
-            if len(w) > 2 and w not in STOP_WORDS
-        ]
+        return [w.strip(".,!?;:\"'()[]{}") for w in words if len(w) > 2 and w not in STOP_WORDS]

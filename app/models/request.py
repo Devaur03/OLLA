@@ -7,9 +7,9 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 class SafeSearchLevel(str, Enum):
     """DuckDuckGo safe-search level. Maps directly to the ddgs `safesearch` arg."""
 
-    STRICT = "on"          # blocks adult content entirely
+    STRICT = "on"  # blocks adult content entirely
     MODERATE = "moderate"  # filters explicit results (default)
-    OFF = "off"            # no filtering — maximum crawl coverage
+    OFF = "off"  # no filtering — maximum crawl coverage
 
 
 class TimeLimit(str, Enum):
@@ -23,9 +23,16 @@ class TimeLimit(str, Enum):
 
 # Friendly region aliases → DuckDuckGo region codes.
 REGION_ALIASES: dict[str, str] = {
-    "wt": "wt-wt", "world": "wt-wt", "wt-wt": "wt-wt",
-    "in": "in-en", "us": "us-en", "uk": "uk-en",
-    "ca": "ca-en", "au": "au-en", "de": "de-de", "fr": "fr-fr",
+    "wt": "wt-wt",
+    "world": "wt-wt",
+    "wt-wt": "wt-wt",
+    "in": "in-en",
+    "us": "us-en",
+    "uk": "uk-en",
+    "ca": "ca-en",
+    "au": "au-en",
+    "de": "de-de",
+    "fr": "fr-fr",
 }
 
 
@@ -110,7 +117,7 @@ class SearchRequest(BaseModel):
     llm_model: str | None = Field(
         default=None,
         description="Override the Ollama model used for answer synthesis "
-                    "(defaults to the configured OLLAMA_MODEL)",
+        "(defaults to the configured OLLAMA_MODEL)",
     )
 
     @field_validator("query", mode="before")
@@ -164,7 +171,9 @@ class HybridSearchRequest(BaseModel):
     """Request for the confidence-routed hybrid retrieval endpoint."""
 
     query: str = Field(
-        ..., min_length=3, max_length=500,
+        ...,
+        min_length=3,
+        max_length=500,
         description="The natural-language question to answer",
         examples=["what is a vector database"],
     )
@@ -173,11 +182,15 @@ class HybridSearchRequest(BaseModel):
         description="Retrieval mode; AUTO routes from the query classification",
     )
     top_k: int = Field(
-        default=8, ge=1, le=50,
+        default=8,
+        ge=1,
+        le=50,
         description="Chunks to pull from local memory / results to crawl",
     )
     min_confidence: float = Field(
-        default=0.7, ge=0.0, le=1.0,
+        default=0.7,
+        ge=0.0,
+        le=1.0,
         description="Memory confidence below which the router refreshes from the web",
     )
     force_refresh: bool = Field(
@@ -185,7 +198,9 @@ class HybridSearchRequest(BaseModel):
         description="Skip cache + memory and always crawl the web",
     )
     max_results: int = Field(
-        default=5, ge=1, le=10,
+        default=5,
+        ge=1,
+        le=10,
         description="Max web pages to crawl when a web fallback is triggered",
     )
     llm_model: str | None = Field(
@@ -215,10 +230,10 @@ class SemanticSearchRequest(BaseModel):
 class FeedbackLevel(str, Enum):
     """What a piece of feedback is attached to (Phase 6)."""
 
-    ANSWER = "answer"        # the synthesized answer as a whole
-    CITATION = "citation"    # one citation / source used in the answer
-    CHUNK = "chunk"          # a specific retrieved text chunk
-    SOURCE = "source"        # a domain / URL in general
+    ANSWER = "answer"  # the synthesized answer as a whole
+    CITATION = "citation"  # one citation / source used in the answer
+    CHUNK = "chunk"  # a specific retrieved text chunk
+    SOURCE = "source"  # a domain / URL in general
 
 
 class FeedbackType(str, Enum):

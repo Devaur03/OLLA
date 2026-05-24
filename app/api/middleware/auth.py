@@ -67,6 +67,7 @@ async def _lookup_db_key(raw_key: str) -> dict | None:
                 api_key, user = row
                 # Update last_used_at
                 from datetime import datetime, timezone
+
                 api_key.last_used_at = datetime.now(timezone.utc)
                 await session.commit()
                 return {
@@ -75,7 +76,8 @@ async def _lookup_db_key(raw_key: str) -> dict | None:
                     "user_plan": user.plan,
                     "user_email": user.email,
                     "role": getattr(api_key, "role", "member") or "member",
-                    "workspace_id": getattr(api_key, "workspace_id", DEFAULT_WORKSPACE_ID) or DEFAULT_WORKSPACE_ID,
+                    "workspace_id": getattr(api_key, "workspace_id", DEFAULT_WORKSPACE_ID)
+                    or DEFAULT_WORKSPACE_ID,
                 }
     except Exception as e:
         logger.warning("AuthMiddleware: DB key lookup failed: %s", e)
@@ -105,8 +107,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
             static_keys = settings.get_api_keys()
             if raw_key in static_keys:
                 request.state.api_key_id = None
-                request.state.user_id    = "static"
-                request.state.user_plan  = "enterprise"
+                request.state.user_id = "static"
+                request.state.user_plan = "enterprise"
                 request.state.user_email = ""
                 request.state.api_key_role = "admin"  # static keys = full access
                 request.state.workspace_id = DEFAULT_WORKSPACE_ID
@@ -116,8 +118,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
             info = await _lookup_db_key(raw_key)
             if info:
                 request.state.api_key_id = info["api_key_id"]
-                request.state.user_id    = info["user_id"]
-                request.state.user_plan  = info["user_plan"]
+                request.state.user_id = info["user_id"]
+                request.state.user_plan = info["user_plan"]
                 request.state.user_email = info["user_email"]
                 request.state.api_key_role = info.get("role", "member")
                 request.state.workspace_id = info.get("workspace_id", DEFAULT_WORKSPACE_ID)

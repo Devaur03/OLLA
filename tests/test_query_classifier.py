@@ -1,7 +1,9 @@
 """Unit tests for the Phase 5 query classifier."""
 
 from app.services.query_classifier_service import (
-    QueryClass, QueryClassifier, WEB_REQUIRED_CLASSES,
+    QueryClass,
+    QueryClassifier,
+    WEB_REQUIRED_CLASSES,
 )
 
 clf = QueryClassifier()

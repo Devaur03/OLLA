@@ -53,14 +53,14 @@ async function api(path: string, opts?: RequestInit) {
     })
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
-      throw new Error('Request timed out (180s) - the server may still be busy.')
+      throw new Error('Request timed out (180s) - the server may still be busy.', { cause: e })
     }
-    throw new Error('Cannot reach the OLLA API. Make sure the backend is running on port 8000.')
+    throw new Error('Cannot reach the OLLA API. Make sure the backend is running on port 8000.', { cause: e })
   } finally {
     window.clearTimeout(timer)
   }
   const text = await res.text()
-  let data: Record<string, unknown> = {}
+  let data: Record<string, unknown>
   try { data = text ? JSON.parse(text) : {} } catch { data = {} }
   if (!res.ok) {
     const d = data.detail
@@ -660,7 +660,8 @@ function HealthPanel() {
       setBusy(false)
     }
   }
-  useEffect(() => { run() }, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void run() }, [])
 
   const dotClass = (s: string) => (s === 'ok' || s === 'healthy' ? 'ok' : s === 'slow' ? 'warn' : 'bad')
 
@@ -857,7 +858,8 @@ function AnalyticsPanel() {
       setBusy(false)
     }
   }
-  useEffect(() => { run() }, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void run() }, [])
 
   const maxType = data ? Math.max(1, ...Object.values(data.by_type)) : 1
 

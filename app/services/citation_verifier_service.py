@@ -26,20 +26,46 @@ _MIN_OVERLAP = 3
 
 # Very common words carry no topical signal — ignore them in the overlap.
 _STOP = {
-    "the", "and", "for", "are", "was", "were", "this", "that", "with", "from",
-    "have", "has", "had", "not", "but", "you", "your", "can", "will", "any",
-    "all", "its", "their", "they", "them", "how", "what", "when", "which",
+    "the",
+    "and",
+    "for",
+    "are",
+    "was",
+    "were",
+    "this",
+    "that",
+    "with",
+    "from",
+    "have",
+    "has",
+    "had",
+    "not",
+    "but",
+    "you",
+    "your",
+    "can",
+    "will",
+    "any",
+    "all",
+    "its",
+    "their",
+    "they",
+    "them",
+    "how",
+    "what",
+    "when",
+    "which",
 }
 
 
 def _tokens(text: str) -> set[str]:
-    return {w for w in _WORD_RE.findall((text or "").lower())
-            if len(w) > 2 and w not in _STOP}
+    return {w for w in _WORD_RE.findall((text or "").lower()) if len(w) > 2 and w not in _STOP}
 
 
 @dataclass
 class CitationCheck:
     """Verification result for a single [n] citation."""
+
     marker: int
     supported: bool
     overlap: int
@@ -49,7 +75,8 @@ class CitationCheck:
 @dataclass
 class VerificationResult:
     """Aggregate citation-verification outcome for one answer."""
-    support_rate: float                       # supported / cited, in [0,1]
+
+    support_rate: float  # supported / cited, in [0,1]
     total_citations: int
     supported_citations: int
     unsupported_markers: list[int] = field(default_factory=list)
@@ -83,11 +110,16 @@ class CitationVerifierService:
             content = _content_of(results[idx])
             overlap = len(answer_tokens & _tokens(content))
             supported = overlap >= _MIN_OVERLAP
-            checks.append(CitationCheck(
-                n, supported, overlap,
-                "shares topical vocabulary" if supported
-                else "little/no vocabulary overlap with the answer",
-            ))
+            checks.append(
+                CitationCheck(
+                    n,
+                    supported,
+                    overlap,
+                    "shares topical vocabulary"
+                    if supported
+                    else "little/no vocabulary overlap with the answer",
+                )
+            )
 
         supported = [c for c in checks if c.supported]
         return VerificationResult(

@@ -33,8 +33,7 @@ def _jsonable(value):
 
 
 def _rows(result) -> list[dict]:
-    return [{k: _jsonable(v) for k, v in row._mapping.items()}
-            for row in result.fetchall()]
+    return [{k: _jsonable(v) for k, v in row._mapping.items()} for row in result.fetchall()]
 
 
 class ExportService:

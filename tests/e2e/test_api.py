@@ -8,6 +8,7 @@ These tests stub no dependencies. They require:
 
 Run with: pytest tests/e2e/ -v -m e2e
 """
+
 import pytest
 
 pytestmark = pytest.mark.e2e

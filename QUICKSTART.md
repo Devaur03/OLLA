@@ -43,7 +43,7 @@ make dev
 You should see:
 ```
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Starting Hybrid Search for Agents v0.1.0
+INFO:     Starting OLLA v0.1.0
 ```
 
 Open **http://localhost:8000/docs** in your browser — you'll see the interactive API docs.

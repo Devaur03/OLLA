@@ -28,7 +28,10 @@ from app.config import settings
 from app.models.db.agent_trace import AgentTrace
 from app.models.request import SearchRequest
 from app.models.response import (
-    ProcessedResult, SearchResponse, SearchResult, StageTrace,
+    ProcessedResult,
+    SearchResponse,
+    SearchResult,
+    StageTrace,
 )
 from app.services.answer_service import AnswerService
 from app.services.cache_service import CacheService
@@ -147,7 +150,8 @@ class SearchPipeline:
         fetched_pages = []
         with self._stage("fetch", critical=True) as span:
             fetched_pages = await FetchService().fetch_all(
-                candidates=candidates, max_chars=request.max_chars_per_page,
+                candidates=candidates,
+                max_chars=request.max_chars_per_page,
             )
             methods = {}
             for p in fetched_pages:
@@ -165,7 +169,8 @@ class SearchPipeline:
             clean_service = CleanService()
             sanitize_service = SanitizeService()
             chunk_service = ChunkService(
-                chunk_size=request.chunk_size, overlap=request.chunk_overlap,
+                chunk_size=request.chunk_size,
+                overlap=request.chunk_overlap,
             )
             entity_service = EntityService()
             redactions = 0
@@ -181,13 +186,14 @@ class SearchPipeline:
                     ch.entities = entity_service.extract(ch.text)
                 processed_results.append(
                     ProcessedResult(
-                        title=page.title, url=page.url,
-                        content=cleaned, chunks=chunks, score=0.0,
+                        title=page.title,
+                        url=page.url,
+                        content=cleaned,
+                        chunks=chunks,
+                        score=0.0,
                     )
                 )
-            span["detail"] = (
-                f"{len(processed_results)} pages, {redactions} injection redaction(s)"
-            )
+            span["detail"] = f"{len(processed_results)} pages, {redactions} injection redaction(s)"
             if redactions:
                 span["status"] = "fallback"
         if not processed_results:
@@ -207,14 +213,17 @@ class SearchPipeline:
                 # final = relevance * 0.7 + source_trust * 0.3
                 r.score = round((r.score * 0.7) + (trust * 0.3), 4)
             ranked.sort(key=lambda r: r.score, reverse=True)
-            for pos, r in enumerate(
-                (x for x in ranked if x.score >= request.min_score), start=1
-            ):
+            for pos, r in enumerate((x for x in ranked if x.score >= request.min_score), start=1):
                 final_results.append(
                     SearchResult(
-                        rank=pos, title=r.title, url=r.url, content=r.content,
-                        chunks=r.chunks, score=r.score,
-                        char_count=len(r.content), chunk_count=len(r.chunks),
+                        rank=pos,
+                        title=r.title,
+                        url=r.url,
+                        content=r.content,
+                        chunks=r.chunks,
+                        score=r.score,
+                        char_count=len(r.content),
+                        chunk_count=len(r.chunks),
                     )
                 )
             span["detail"] = f"{len(final_results)} results above min_score"
@@ -232,9 +241,9 @@ class SearchPipeline:
                 span["status"] = "skipped"
                 span["detail"] = "skipped by request"
             else:
-                answer_result = await AnswerService(
-                    model=request.llm_model
-                ).synthesize(request.query, final_results)
+                answer_result = await AnswerService(model=request.llm_model).synthesize(
+                    request.query, final_results
+                )
                 if answer_result.ok:
                     answer_text = answer_result.answer
                     answer_model = answer_result.model
@@ -266,8 +275,10 @@ class SearchPipeline:
             else:
                 store_service = StoreService(self.db, self.workspace_id)
                 query_id = await store_service.save(
-                    query=request.query, params=search_params,
-                    results=final_results, processing_ms=elapsed_ms,
+                    query=request.query,
+                    params=search_params,
+                    results=final_results,
+                    processing_ms=elapsed_ms,
                 )
                 span["detail"] = f"query_id={query_id}"
         # Expose the stored query id so clients can attach answer-level feedback.
@@ -328,7 +339,9 @@ class SearchPipeline:
 
         logger.info(
             "Search complete: %r -> %d results in %dms%s",
-            request.query, len(final_results), elapsed_ms,
+            request.query,
+            len(final_results),
+            elapsed_ms,
             " (degraded)" if self.degraded else "",
         )
         return response
@@ -384,17 +397,14 @@ class SearchPipeline:
         processed = 0
         batch = 50
         for i in range(0, len(rows), batch):
-            window = rows[i:i + batch]
+            window = rows[i : i + batch]
             embeddings = await embed_service.embed_texts([r.text for r in window])
             if not embeddings:
                 continue
             for row, emb in zip(window, embeddings):
                 vec = "[" + ",".join(map(str, emb)) + "]"
                 await self.db.execute(
-                    _text(
-                        "UPDATE chunks SET embedding = CAST(:emb AS vector) "
-                        "WHERE id = :id"
-                    ),
+                    _text("UPDATE chunks SET embedding = CAST(:emb AS vector) WHERE id = :id"),
                     {"emb": vec, "id": row.id},
                 )
                 processed += 1
@@ -405,11 +415,8 @@ class SearchPipeline:
         """Total chunk_edges currently in the knowledge graph (best-effort)."""
         try:
             from sqlalchemy import text as _text
-            row = (
-                await self.db.execute(
-                    _text("SELECT COUNT(*) AS n FROM chunk_edges")
-                )
-            ).first()
+
+            row = (await self.db.execute(_text("SELECT COUNT(*) AS n FROM chunk_edges"))).first()
             return int(row.n) if row else 0
         except Exception:  # noqa: BLE001
             return 0

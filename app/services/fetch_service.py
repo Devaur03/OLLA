@@ -46,7 +46,9 @@ def _strip_html(raw: str) -> str:
     """Best-effort HTML → plain text. Drops junk tags, then all remaining tags."""
     for tag in _JUNK_TAGS:
         raw = re.sub(
-            rf"<{tag}\b[^>]*>.*?</{tag}>", " ", raw,
+            rf"<{tag}\b[^>]*>.*?</{tag}>",
+            " ",
+            raw,
             flags=re.DOTALL | re.IGNORECASE,
         )
     raw = re.sub(r"<!--.*?-->", " ", raw, flags=re.DOTALL)
@@ -82,7 +84,8 @@ class FetchService:
             by_method[p.fetch_method] = by_method.get(p.fetch_method, 0) + 1
         logger.info(
             "FetchService: %d/%d pages fetched (%s)",
-            len(pages), len(candidates),
+            len(pages),
+            len(candidates),
             ", ".join(f"{k}={v}" for k, v in by_method.items()) or "none",
         )
         return pages
@@ -139,7 +142,9 @@ class FetchService:
             except httpx.TimeoutException:
                 logger.warning(
                     "FetchService[Jina]: timeout %s (attempt %d/%d)",
-                    url, attempt, _JINA_MAX_ATTEMPTS,
+                    url,
+                    attempt,
+                    _JINA_MAX_ATTEMPTS,
                 )
                 if attempt < _JINA_MAX_ATTEMPTS:
                     await asyncio.sleep(delay)
@@ -148,7 +153,8 @@ class FetchService:
                 if 400 <= e.response.status_code < 500:
                     logger.warning(
                         "FetchService[Jina]: %d on %s — falling through",
-                        e.response.status_code, url,
+                        e.response.status_code,
+                        url,
                     )
                     return None
                 if attempt < _JINA_MAX_ATTEMPTS:

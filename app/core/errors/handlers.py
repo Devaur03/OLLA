@@ -1,4 +1,5 @@
 """FastAPI exception handlers that convert domain exceptions to JSON responses."""
+
 import logging
 from fastapi import Request
 from fastapi.responses import JSONResponse

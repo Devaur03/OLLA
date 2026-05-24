@@ -89,19 +89,27 @@ async def recent_queries(
 
 
 @router.get("/{result_id}")
-async def get_source(http_request: Request, result_id: str, db: AsyncSession = Depends(get_db_session)):
+async def get_source(
+    http_request: Request, result_id: str, db: AsyncSession = Depends(get_db_session)
+):
     """Read one stored result and its chunks back out of the knowledge base."""
-    source = await SourcesService(db, getattr(http_request.state, "workspace_id", None)).get_source(result_id)
+    source = await SourcesService(db, getattr(http_request.state, "workspace_id", None)).get_source(
+        result_id
+    )
     if source is None:
         raise HTTPException(status_code=404, detail=f"Source {result_id} not found")
     return source
 
 
 @router.post("/{result_id}/refresh")
-async def refresh_source(http_request: Request, result_id: str, db: AsyncSession = Depends(get_db_session)):
+async def refresh_source(
+    http_request: Request, result_id: str, db: AsyncSession = Depends(get_db_session)
+):
     """Re-crawl a stored source's URL and replace its content and chunks."""
     try:
-        return await SourcesService(db, getattr(http_request.state, "workspace_id", None)).refresh_source(result_id)
+        return await SourcesService(
+            db, getattr(http_request.state, "workspace_id", None)
+        ).refresh_source(result_id)
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except RuntimeError as e:

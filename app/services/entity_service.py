@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 class EntityService:
     """Lazy-loading spaCy NER wrapper. Safe to instantiate even if spaCy absent."""
 
-    _nlp = None            # shared spaCy pipeline (loaded once)
-    _load_failed = False   # remember failure so we do not retry every call
+    _nlp = None  # shared spaCy pipeline (loaded once)
+    _load_failed = False  # remember failure so we do not retry every call
 
     def __init__(self) -> None:
         self.enabled = settings.enable_entity_extraction

@@ -96,7 +96,9 @@ class FeedbackService:
 
         logger.info(
             "FeedbackService: %s/%s recorded (%s)",
-            req.level.value, req.feedback_type.value, feedback_id,
+            req.level.value,
+            req.feedback_type.value,
+            feedback_id,
         )
         return feedback_id, effects
 
@@ -127,7 +129,9 @@ class FeedbackService:
                 int(row.positive_feedback_count), int(row.negative_feedback_count)
             )
             await self.db.execute(
-                text("UPDATE chunks SET usefulness_score = :u WHERE id = :cid AND workspace_id = :ws"),
+                text(
+                    "UPDATE chunks SET usefulness_score = :u WHERE id = :cid AND workspace_id = :ws"
+                ),
                 {"u": usefulness, "cid": req.chunk_id, "ws": self.workspace_id},
             )
             return [
@@ -141,7 +145,9 @@ class FeedbackService:
     async def _flag_result_refresh(self, result_id: str) -> None:
         try:
             await self.db.execute(
-                text("UPDATE results SET refresh_needed = TRUE WHERE id = :rid AND workspace_id = :ws"),
+                text(
+                    "UPDATE results SET refresh_needed = TRUE WHERE id = :rid AND workspace_id = :ws"
+                ),
                 {"rid": result_id, "ws": self.workspace_id},
             )
         except Exception as e:  # noqa: BLE001
@@ -182,21 +188,30 @@ class FeedbackService:
     async def stats(self) -> dict:
         """Aggregate feedback analytics for the dashboard."""
         out: dict = {
-            "total": 0, "by_type": {}, "by_level": {}, "satisfaction_rate": 0.0,
-            "best_sources": [], "worst_sources": [],
-            "most_flagged_chunks": [], "sources_needing_refresh": [],
+            "total": 0,
+            "by_type": {},
+            "by_level": {},
+            "satisfaction_rate": 0.0,
+            "best_sources": [],
+            "worst_sources": [],
+            "most_flagged_chunks": [],
+            "sources_needing_refresh": [],
         }
         try:
             by_type = (
                 await self.db.execute(
-                    text("SELECT feedback_type, COUNT(*) AS n FROM feedback WHERE workspace_id = :ws GROUP BY feedback_type"),
-                    {"ws": self.workspace_id}
+                    text(
+                        "SELECT feedback_type, COUNT(*) AS n FROM feedback WHERE workspace_id = :ws GROUP BY feedback_type"
+                    ),
+                    {"ws": self.workspace_id},
                 )
             ).fetchall()
             by_level = (
                 await self.db.execute(
-                    text("SELECT level, COUNT(*) AS n FROM feedback WHERE workspace_id = :ws GROUP BY level"),
-                    {"ws": self.workspace_id}
+                    text(
+                        "SELECT level, COUNT(*) AS n FROM feedback WHERE workspace_id = :ws GROUP BY level"
+                    ),
+                    {"ws": self.workspace_id},
                 )
             ).fetchall()
             out["by_type"] = {r.feedback_type: int(r.n) for r in by_type}
@@ -220,7 +235,7 @@ class FeedbackService:
                         LIMIT 10
                         """
                     ),
-                    {"ws": self.workspace_id}
+                    {"ws": self.workspace_id},
                 )
             ).fetchall()
             out["most_flagged_chunks"] = [
@@ -233,7 +248,7 @@ class FeedbackService:
                         "SELECT domain, outdated_count FROM source_trust "
                         "WHERE refresh_needed = TRUE AND workspace_id = :ws ORDER BY outdated_count DESC LIMIT 10"
                     ),
-                    {"ws": self.workspace_id}
+                    {"ws": self.workspace_id},
                 )
             ).fetchall()
             out["sources_needing_refresh"] = [

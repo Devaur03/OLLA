@@ -106,8 +106,8 @@ class SourcesService:
 
         # --- replace stored content + chunks ------------------------------
         await self.db.execute(
-            text("DELETE FROM chunks WHERE result_id = :rid AND workspace_id = :ws"), 
-            {"rid": result_id, "ws": self.workspace_id}
+            text("DELETE FROM chunks WHERE result_id = :rid AND workspace_id = :ws"),
+            {"rid": result_id, "ws": self.workspace_id},
         )
         for ch in chunks:
             await self.db.execute(
@@ -119,8 +119,11 @@ class SourcesService:
                     """
                 ),
                 {
-                    "id": str(uuid.uuid4()), "rid": result_id,
-                    "cidx": ch.chunk_id, "txt": ch.text, "cc": ch.char_count,
+                    "id": str(uuid.uuid4()),
+                    "rid": result_id,
+                    "cidx": ch.chunk_id,
+                    "txt": ch.text,
+                    "cc": ch.char_count,
                     "ws": self.workspace_id,
                 },
             )
@@ -136,7 +139,13 @@ class SourcesService:
                 WHERE id = :rid AND workspace_id = :ws
                 """
             ),
-            {"content": cleaned, "cc": len(cleaned), "n": len(chunks), "rid": result_id, "ws": self.workspace_id},
+            {
+                "content": cleaned,
+                "cc": len(cleaned),
+                "n": len(chunks),
+                "rid": result_id,
+                "ws": self.workspace_id,
+            },
         )
         logger.info("SourcesService: refreshed %s (%d chunks)", row.url, len(chunks))
         return {

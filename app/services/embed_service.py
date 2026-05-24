@@ -17,8 +17,7 @@ def _load_local_model():
             from sentence_transformers import SentenceTransformer
         except ImportError as e:  # noqa: BLE001
             raise RuntimeError(
-                "sentence-transformers not installed. "
-                "Run: pip install sentence-transformers"
+                "sentence-transformers not installed. Run: pip install sentence-transformers"
             ) from e
         _LOCAL_MODEL = SentenceTransformer("BAAI/bge-small-en-v1.5")
         logger.info("EmbedService: loaded local BGE model (cached process-wide)")
@@ -75,6 +74,7 @@ class EmbedService:
     async def _embed_openai(self, texts: list[str]) -> list[list[float]]:
         """Embed using OpenAI text-embedding-3-small API."""
         from openai import AsyncOpenAI
+
         client = AsyncOpenAI(api_key=settings.openai_api_key)
 
         # OpenAI supports batching — send all texts in one request
