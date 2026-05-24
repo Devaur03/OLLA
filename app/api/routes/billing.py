@@ -37,35 +37,36 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/billing", tags=["billing"])
 
 PLAN_LIMITS = {
-    "free":       1_000,
-    "starter":   10_000,
-    "pro":       50_000,
-    "team":     200_000,
+    "free": 1_000,
+    "starter": 10_000,
+    "pro": 50_000,
+    "team": 200_000,
     "enterprise": None,
 }
 
 PLAN_PRICES = {
-    "starter": {"label": "Starter — $29/mo",  "monthly": 2900},
-    "pro":     {"label": "Pro — $99/mo",      "monthly": 9900},
-    "team":    {"label": "Team — $299/mo",    "monthly": 29900},
+    "starter": {"label": "Starter — $29/mo", "monthly": 2900},
+    "pro": {"label": "Pro — $99/mo", "monthly": 9900},
+    "team": {"label": "Team — $299/mo", "monthly": 29900},
 }
 
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 
+
 class UsageResponse(BaseModel):
-    user_id:       str
-    email:         str
-    plan:          str
-    queries_used:  int
+    user_id: str
+    email: str
+    plan: str
+    queries_used: int
     queries_limit: Optional[int]  # None = unlimited
-    period_start:  datetime
-    period_end:    datetime
+    period_start: datetime
+    period_end: datetime
     upgrade_options: list[dict]
 
 
 class CheckoutRequest(BaseModel):
-    plan: str   # "starter" | "pro" | "team"
+    plan: str  # "starter" | "pro" | "team"
 
 
 class CheckoutResponse(BaseModel):
@@ -78,10 +79,12 @@ class PortalResponse(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _stripe():
     """Lazy-import stripe so the app starts without it if not configured."""
     try:
         import stripe as _stripe
+
         _stripe.api_key = settings.stripe_secret_key
         return _stripe
     except ImportError:
@@ -99,17 +102,17 @@ def _require_user(request: Request) -> tuple[str, str, str]:
     return (
         user_id,
         getattr(request.state, "user_email", ""),
-        getattr(request.state, "user_plan",  "free"),
+        getattr(request.state, "user_plan", "free"),
     )
 
 
 async def _count_this_month(user_id: str, db: AsyncSession) -> int:
-    now         = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     result = await db.execute(
         select(func.count(UsageEvent.id)).where(
             and_(
-                UsageEvent.user_id   == user_id,
+                UsageEvent.user_id == user_id,
                 UsageEvent.created_at >= month_start,
                 UsageEvent.endpoint.startswith("/api/v1/search"),
             )
@@ -120,28 +123,33 @@ async def _count_this_month(user_id: str, db: AsyncSession) -> int:
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
+
 @router.get("/usage", response_model=UsageResponse)
 async def get_usage(
     request: Request,
-    db:      AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Return current plan + usage for the authenticated user."""
     user_id, email, plan = _require_user(request)
-    used  = await _count_this_month(user_id, db)
+    used = await _count_this_month(user_id, db)
     limit = PLAN_LIMITS.get(plan)
 
-    now         = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     # Next month start
     if now.month == 12:
-        period_end = now.replace(year=now.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        period_end = now.replace(
+            year=now.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
     else:
-        period_end = now.replace(month=now.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        period_end = now.replace(
+            month=now.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
 
     upgrade_options = [
         {
-            "plan":  p,
+            "plan": p,
             "label": PLAN_PRICES[p]["label"],
             "limit": PLAN_LIMITS[p],
         }
@@ -163,9 +171,9 @@ async def get_usage(
 
 @router.post("/checkout", response_model=CheckoutResponse)
 async def create_checkout(
-    body:    CheckoutRequest,
+    body: CheckoutRequest,
     request: Request,
-    db:      AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Create a Stripe Checkout session to upgrade to a paid plan."""
     user_id, email, current_plan = _require_user(request)
@@ -184,7 +192,7 @@ async def create_checkout(
 
     # Get or create Stripe customer
     result = await db.execute(select(User).where(User.id == user_id))
-    user   = result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
 
@@ -194,7 +202,7 @@ async def create_checkout(
         await db.commit()
 
     base_url = settings.app_base_url.rstrip("/")
-    session  = stripe.checkout.Session.create(
+    session = stripe.checkout.Session.create(
         customer=user.stripe_customer_id,
         mode="subscription",
         line_items=[{"price": price_id, "quantity": 1}],
@@ -211,22 +219,22 @@ async def create_checkout(
 @router.post("/portal", response_model=PortalResponse)
 async def create_portal(
     request: Request,
-    db:      AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Create a Stripe Customer Portal session so the user can manage their subscription."""
     user_id, email, _ = _require_user(request)
 
     result = await db.execute(select(User).where(User.id == user_id))
-    user   = result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
     if not user or not user.stripe_customer_id:
         raise HTTPException(
             status_code=400,
             detail="No billing account found. Subscribe via /api/v1/billing/checkout first.",
         )
 
-    stripe   = _stripe()
+    stripe = _stripe()
     base_url = settings.app_base_url.rstrip("/")
-    session  = stripe.billing_portal.Session.create(
+    session = stripe.billing_portal.Session.create(
         customer=user.stripe_customer_id,
         return_url=f"{base_url}/dashboard#billing",
     )
@@ -238,7 +246,7 @@ async def create_portal(
 @router.post("/webhook", include_in_schema=False)
 async def stripe_webhook(
     request: Request,
-    db:      AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """
     Stripe webhook — verifies signature and handles subscription lifecycle events.
@@ -249,14 +257,12 @@ async def stripe_webhook(
       customer.subscription.updated   → sync plan change
       customer.subscription.deleted   → downgrade to free
     """
-    payload   = await request.body()
+    payload = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
 
     stripe = _stripe()
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, settings.stripe_webhook_secret
-        )
+        event = stripe.Webhook.construct_event(payload, sig_header, settings.stripe_webhook_secret)
     except stripe.error.SignatureVerificationError:
         logger.warning("billing.webhook: invalid Stripe signature")
         raise HTTPException(status_code=400, detail="Invalid signature")
@@ -265,12 +271,12 @@ async def stripe_webhook(
         raise HTTPException(status_code=400, detail="Malformed event")
 
     event_type = event["type"]
-    data       = event["data"]["object"]
+    data = event["data"]["object"]
 
     if event_type == "checkout.session.completed":
         user_id = data.get("metadata", {}).get("user_id")
-        plan    = data.get("metadata", {}).get("plan")
-        sub_id  = data.get("subscription")
+        plan = data.get("metadata", {}).get("plan")
+        sub_id = data.get("subscription")
         if user_id and plan:
             await _update_user_plan(db, user_id=user_id, plan=plan, sub_id=sub_id)
 
@@ -288,11 +294,12 @@ async def stripe_webhook(
 
 # ── Webhook helpers ───────────────────────────────────────────────────────────
 
+
 async def _update_user_plan(
     db: AsyncSession, *, user_id: str, plan: str, sub_id: str | None
 ) -> None:
     result = await db.execute(select(User).where(User.id == user_id))
-    user   = result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
     if not user:
         logger.warning("billing: user %s not found for plan update", user_id)
         return
@@ -303,7 +310,8 @@ async def _update_user_plan(
     logger.info("billing: updated user %s -> plan %s", user_id, plan)
 
 
-_PRICE_TO_PLAN: dict[str, str] = {}   # populated lazily from settings
+_PRICE_TO_PLAN: dict[str, str] = {}  # populated lazily from settings
+
 
 async def _sync_subscription(
     db: AsyncSession, *, subscription: dict, force_free: bool = False
@@ -313,9 +321,7 @@ async def _sync_subscription(
     if not stripe_customer_id:
         return
 
-    result = await db.execute(
-        select(User).where(User.stripe_customer_id == stripe_customer_id)
-    )
+    result = await db.execute(select(User).where(User.stripe_customer_id == stripe_customer_id))
     user = result.scalar_one_or_none()
     if not user:
         logger.warning("billing: no user found for Stripe customer %s", stripe_customer_id)

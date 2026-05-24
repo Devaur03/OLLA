@@ -79,8 +79,10 @@ class ChunkService:
                     chunk_id += 1
 
                     # Build overlap: take last N chars of saved chunk as prefix for next
-                    overlap_text = current_text[-self.overlap:] if self.overlap > 0 else ""
-                    current_text = (overlap_text + " " + paragraph).strip() if overlap_text else paragraph
+                    overlap_text = current_text[-self.overlap :] if self.overlap > 0 else ""
+                    current_text = (
+                        (overlap_text + " " + paragraph).strip() if overlap_text else paragraph
+                    )
 
                 else:
                     # Paragraph itself is larger than chunk_size — split it
@@ -91,7 +93,7 @@ class ChunkService:
                     # Use last sub-chunk's end as overlap for next paragraph
                     if sub_chunks:
                         last = sub_chunks[-1].text
-                        current_text = last[-self.overlap:] if self.overlap > 0 else ""
+                        current_text = last[-self.overlap :] if self.overlap > 0 else ""
                     else:
                         current_text = ""
 
@@ -138,14 +140,16 @@ class ChunkService:
         child_id = 0
         for parent_index, parent in enumerate(parents):
             for kid in self.chunk(parent.text):
-                children.append({
-                    "chunk": ContentChunk(
-                        chunk_id=child_id,
-                        text=kid.text,
-                        char_count=kid.char_count,
-                    ),
-                    "parent_index": parent_index,
-                })
+                children.append(
+                    {
+                        "chunk": ContentChunk(
+                            chunk_id=child_id,
+                            text=kid.text,
+                            char_count=kid.char_count,
+                        ),
+                        "parent_index": parent_index,
+                    }
+                )
                 child_id += 1
         return {"parents": parents, "children": children}
 
@@ -169,31 +173,37 @@ class ChunkService:
                 current = prospective
             else:
                 if current:
-                    chunks.append(ContentChunk(
-                        chunk_id=chunk_id,
-                        text=current,
-                        char_count=len(current),
-                    ))
+                    chunks.append(
+                        ContentChunk(
+                            chunk_id=chunk_id,
+                            text=current,
+                            char_count=len(current),
+                        )
+                    )
                     chunk_id += 1
-                    overlap_text = current[-self.overlap:] if self.overlap > 0 else ""
+                    overlap_text = current[-self.overlap :] if self.overlap > 0 else ""
                     current = (overlap_text + " " + sentence).strip() if overlap_text else sentence
                 else:
                     # Even a single sentence exceeds chunk_size — hard split
                     for i in range(0, len(sentence), self.chunk_size - self.overlap):
-                        segment = sentence[i: i + self.chunk_size]
+                        segment = sentence[i : i + self.chunk_size]
                         if segment.strip():
-                            chunks.append(ContentChunk(
-                                chunk_id=chunk_id,
-                                text=segment.strip(),
-                                char_count=len(segment.strip()),
-                            ))
+                            chunks.append(
+                                ContentChunk(
+                                    chunk_id=chunk_id,
+                                    text=segment.strip(),
+                                    char_count=len(segment.strip()),
+                                )
+                            )
                             chunk_id += 1
 
         if current.strip():
-            chunks.append(ContentChunk(
-                chunk_id=chunk_id,
-                text=current.strip(),
-                char_count=len(current.strip()),
-            ))
+            chunks.append(
+                ContentChunk(
+                    chunk_id=chunk_id,
+                    text=current.strip(),
+                    char_count=len(current.strip()),
+                )
+            )
 
         return chunks

@@ -39,7 +39,7 @@ class ScoreBreakdown:
     """The final score plus the per-signal contributions, for transparency."""
 
     final: float
-    components: dict[str, float]   # raw signal values
+    components: dict[str, float]  # raw signal values
     contributions: dict[str, float]  # signal * weight
 
 

@@ -20,15 +20,17 @@ class Feedback(Base):
     IMPORTANT: feedback updates *metadata and ranking signals* only. It never
     rewrites scraped content.
     """
+
     __tablename__ = "feedback"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     # Phase 12: multi-tenant workspace scoping
     workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"),
-        nullable=False, default=DEFAULT_WORKSPACE_ID, index=True,
+        String(36),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False,
+        default=DEFAULT_WORKSPACE_ID,
+        index=True,
     )
     query_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("queries.id", ondelete="SET NULL"), nullable=True

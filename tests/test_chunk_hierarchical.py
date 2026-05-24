@@ -3,8 +3,7 @@
 from app.services.chunk_service import ChunkService
 
 # Build a long document: many short paragraphs so it spans multiple parents.
-DOC = "\n\n".join(f"Paragraph {i} about vector databases and retrieval." * 3
-                  for i in range(60))
+DOC = "\n\n".join(f"Paragraph {i} about vector databases and retrieval." * 3 for i in range(60))
 
 
 def test_empty_text_yields_empty_hierarchy():

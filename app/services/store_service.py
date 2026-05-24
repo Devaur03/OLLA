@@ -127,16 +127,30 @@ class StoreService:
         for parent in hier["parents"]:
             pid = str(uuid.uuid4())
             parent_ids.append(pid)
-            self.db.add(StoredChunk(
-                id=pid, result_id=result_id, chunk_id=parent.chunk_id,
-                text=parent.text, char_count=parent.char_count,
-                memory_tier="stm", is_parent=True, workspace_id=self.workspace_id,
-            ))
+            self.db.add(
+                StoredChunk(
+                    id=pid,
+                    result_id=result_id,
+                    chunk_id=parent.chunk_id,
+                    text=parent.text,
+                    char_count=parent.char_count,
+                    memory_tier="stm",
+                    is_parent=True,
+                    workspace_id=self.workspace_id,
+                )
+            )
         for child in hier["children"]:
             ch = child["chunk"]
-            self.db.add(StoredChunk(
-                id=str(uuid.uuid4()), result_id=result_id, chunk_id=ch.chunk_id,
-                text=ch.text, char_count=ch.char_count, memory_tier="stm",
-                is_parent=False, parent_id=parent_ids[child["parent_index"]],
-                workspace_id=self.workspace_id,
-            ))
+            self.db.add(
+                StoredChunk(
+                    id=str(uuid.uuid4()),
+                    result_id=result_id,
+                    chunk_id=ch.chunk_id,
+                    text=ch.text,
+                    char_count=ch.char_count,
+                    memory_tier="stm",
+                    is_parent=False,
+                    parent_id=parent_ids[child["parent_index"]],
+                    workspace_id=self.workspace_id,
+                )
+            )

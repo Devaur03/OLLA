@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 # News halves in 6h; evergreen content takes ~1 year.
 _HALF_LIFE_HOURS: dict[QueryClass, float] = {
     QueryClass.NEWS: 6.0,
-    QueryClass.RECENT: 72.0,            # 3 days
-    QueryClass.COMPARISON: 24.0 * 90,   # 90 days
-    QueryClass.TECHNICAL: 24.0 * 180,   # 180 days
+    QueryClass.RECENT: 72.0,  # 3 days
+    QueryClass.COMPARISON: 24.0 * 90,  # 90 days
+    QueryClass.TECHNICAL: 24.0 * 180,  # 180 days
     QueryClass.RESEARCH: 24.0 * 180,
     QueryClass.DEFINITION: 24.0 * 365,  # 1 year
     QueryClass.EVERGREEN: 24.0 * 365,

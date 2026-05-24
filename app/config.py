@@ -6,7 +6,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # App
-    app_name: str = "Hybrid Search for Agents"
+    app_name: str = "OLLA"
     app_version: str = "0.1.0"
     debug: bool = False
     log_json: bool = False
@@ -23,25 +23,25 @@ class Settings(BaseSettings):
 
     # Fetch API
     fetch_base_url: str = "https://r.jina.ai"
-    jina_api_key: str = ""                 # optional — higher Jina rate limits
+    jina_api_key: str = ""  # optional — higher Jina rate limits
 
     # Search providers
     brave_api_key: str = ""
-    ddg_backends: str = "auto,html,lite"   # ordered DDG backend fallback chain
-    default_safesearch: str = "moderate"   # on | moderate | off
+    ddg_backends: str = "auto,html,lite"  # ordered DDG backend fallback chain
+    default_safesearch: str = "moderate"  # on | moderate | off
     default_region: str = "wt-wt"
-    proxy_pool: str = ""                   # comma-separated http(s) proxy URLs
+    proxy_pool: str = ""  # comma-separated http(s) proxy URLs
 
     # Pipeline behaviour
-    enable_sanitization: bool = True       # strip prompt-injection from scraped text
+    enable_sanitization: bool = True  # strip prompt-injection from scraped text
     enable_entity_extraction: bool = False  # spaCy NER on chunks (needs en_core_web_sm)
-    enable_knowledge_graph: bool = True    # build chunk_edges after embedding
+    enable_knowledge_graph: bool = True  # build chunk_edges after embedding
 
     # Memory tiers / confidence
     confidence_default: float = 0.5
     ltm_confidence_threshold: float = 0.7  # promote STM -> LTM at/above this
-    ltm_retrieval_threshold: int = 3       # ...and at/above this retrieval count
-    stm_prune_confidence: float = 0.3      # prune STM below this confidence
+    ltm_retrieval_threshold: int = 3  # ...and at/above this retrieval count
+    stm_prune_confidence: float = 0.3  # prune STM below this confidence
     stm_prune_age_days: int = 30
 
     # Knowledge graph
@@ -49,14 +49,14 @@ class Settings(BaseSettings):
     graph_max_edges_per_chunk: int = 10
 
     # Retrieval quality (Phase 10)
-    enable_reranking: bool = False             # cross-encoder rerank (needs model)
+    enable_reranking: bool = False  # cross-encoder rerank (needs model)
     reranker_model: str = "BAAI/bge-reranker-base"
-    enable_query_expansion: bool = True        # multi-query expansion in DEEP mode
+    enable_query_expansion: bool = True  # multi-query expansion in DEEP mode
     enable_citation_verification: bool = True  # verify answer [n] citations
-    diversity_max_per_domain: int = 2          # soft per-domain cap in result sets
+    diversity_max_per_domain: int = 2  # soft per-domain cap in result sets
     enable_parent_child_chunking: bool = False  # hierarchical child/parent chunks
-    parent_chunk_size: int = 2000              # char size of a parent context chunk
-    deep_research_max_queries: int = 3         # query variants crawled in DEEP mode
+    parent_chunk_size: int = 2000  # char size of a parent context chunk
+    deep_research_max_queries: int = 3  # query variants crawled in DEEP mode
 
     # RAG answer synthesis (local LLM via Ollama)
     enable_answer_synthesis: bool = True
@@ -64,9 +64,9 @@ class Settings(BaseSettings):
     # llama3.2:1b — small + fast on CPU (the 3B model times out on modest
     # hardware). Override with OLLAMA_MODEL in .env (e.g. qwen2.5:1.5b).
     ollama_model: str = "llama3.2:1b"
-    ollama_timeout: float = 150.0          # read timeout (connect is fixed at 5s)
-    ollama_num_predict: int = 512          # cap on answer length (tokens)
-    answer_max_context_chars: int = 3000   # total source text fed to the LLM
+    ollama_timeout: float = 150.0  # read timeout (connect is fixed at 5s)
+    ollama_num_predict: int = 512  # cap on answer length (tokens)
+    answer_max_context_chars: int = 3000  # total source text fed to the LLM
 
     # PostgreSQL
     database_url: str = "postgresql+asyncpg://postgres:password@localhost:5433/hybriddb"
@@ -110,12 +110,12 @@ class Settings(BaseSettings):
     app_base_url: str = "http://localhost:8000"
 
     # Stripe (set in Railway / Render dashboard — never commit)
-    stripe_secret_key:      str = ""
-    stripe_webhook_secret:  str = ""
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
     stripe_publishable_key: str = ""
-    stripe_price_starter:   str = ""
-    stripe_price_pro:       str = ""
-    stripe_price_team:      str = ""
+    stripe_price_starter: str = ""
+    stripe_price_pro: str = ""
+    stripe_price_team: str = ""
     stripe_price_enterprise: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}

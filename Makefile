@@ -3,7 +3,7 @@
 # Default target
 help:
 	@echo ""
-	@echo "  Hybrid Search for Agents — available commands"
+	@echo "  OLLA — available commands"
 	@echo ""
 	@echo "  Quick start:"
 	@echo "    make setup        Install deps, copy .env, and start Docker services"

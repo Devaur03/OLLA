@@ -9,6 +9,7 @@ Usage:
     breaker = CircuitBreaker(failure_threshold=5, recovery_timeout=60)
     result = await breaker.call(my_async_func, arg1, arg2)
 """
+
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Callable
@@ -81,6 +82,7 @@ class CircuitBreaker:
             if self._state != "open":
                 logger.warning(
                     "CircuitBreaker[%s]: OPEN after %d failures",
-                    self.name, self._failures,
+                    self.name,
+                    self._failures,
                 )
             self._state = "open"

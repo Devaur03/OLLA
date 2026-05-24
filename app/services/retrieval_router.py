@@ -33,7 +33,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.models.request import HybridSearchRequest, RetrievalMode, SearchRequest
 from app.models.response import (
-    ContentChunk, HybridSearchResponse, RetrievedSource, SearchResult,
+    ContentChunk,
+    HybridSearchResponse,
+    RetrievedSource,
+    SearchResult,
 )
 from app.services.answer_service import AnswerService
 from app.services.cache_service import CacheService
@@ -56,8 +59,11 @@ logger = logging.getLogger(__name__)
 _RELEVANT_SIM = 0.55
 # Confidence component weights (sum = 1.0).
 _CONF_W = {
-    "top_sim": 0.40, "coverage": 0.15, "trust": 0.15,
-    "freshness": 0.15, "usefulness": 0.15,
+    "top_sim": 0.40,
+    "coverage": 0.15,
+    "trust": 0.15,
+    "freshness": 0.15,
+    "usefulness": 0.15,
 }
 
 
@@ -135,8 +141,7 @@ class RetrievalRouter:
 
         if sufficient:
             trace.append(
-                f"confidence ≥ {request.min_confidence} and content fresh "
-                "→ answering from memory"
+                f"confidence ≥ {request.min_confidence} and content fresh → answering from memory"
             )
             return await self._answer_from_memory(
                 request, cls, mode, memory, trace, start, cache_key
@@ -151,7 +156,9 @@ class RetrievalRouter:
     def _resolve_mode(self, request, cls, trace: list[str]) -> RetrievalMode:
         """Turn an AUTO request + classification into a concrete mode."""
         if request.force_refresh:
-            chosen = RetrievalMode.DEEP if request.mode == RetrievalMode.DEEP else RetrievalMode.FRESH
+            chosen = (
+                RetrievalMode.DEEP if request.mode == RetrievalMode.DEEP else RetrievalMode.FRESH
+            )
             trace.append(f"force_refresh set → {chosen.value.upper()} mode")
             return chosen
         if request.mode != RetrievalMode.AUTO:
@@ -207,7 +214,8 @@ class RetrievalRouter:
         try:
             rows = (
                 await self.db.execute(
-                    sql, {"embedding": vector_str, "lim": request.top_k * 3, "ws": self.workspace_id}
+                    sql,
+                    {"embedding": vector_str, "lim": request.top_k * 3, "ws": self.workspace_id},
                 )
             ).fetchall()
         except Exception as e:  # noqa: BLE001
@@ -223,11 +231,14 @@ class RetrievalRouter:
             g = grouped.setdefault(
                 row.result_id,
                 {
-                    "title": row.title or "", "url": row.url,
+                    "title": row.title or "",
+                    "url": row.url,
                     "content": row.result_content or "",
                     "result_score": float(row.result_score or 0.0),
                     "last_refreshed_at": row.last_refreshed_at,
-                    "chunks": [], "sims": [], "usefulness": [],
+                    "chunks": [],
+                    "sims": [],
+                    "usefulness": [],
                 },
             )
             g["chunks"].append(
@@ -262,26 +273,31 @@ class RetrievalRouter:
             content = g["content"] or "\n\n".join(c.text for c in g["chunks"])
             breakdown = self.scoring.score(
                 semantic=src_sim,
-                keyword=src_sim,        # no separate keyword signal on stored chunks
+                keyword=src_sim,  # no separate keyword signal on stored chunks
                 source_trust=src_trust,
                 freshness=src_fresh,
                 feedback=src_useful,
                 density=self.scoring.density_score(len(content)),
             )
-            scored.append({
-                "g": g, "url": g["url"], "content": content, "sim": src_sim,
-                "trust": src_trust, "fresh": src_fresh, "useful": src_useful,
-                "final": breakdown.final,
-            })
+            scored.append(
+                {
+                    "g": g,
+                    "url": g["url"],
+                    "content": content,
+                    "sim": src_sim,
+                    "trust": src_trust,
+                    "fresh": src_fresh,
+                    "useful": src_useful,
+                    "final": breakdown.final,
+                }
+            )
 
         scored.sort(key=lambda s: s["final"], reverse=True)
 
         # --- Phase 10: optional cross-encoder rerank over the candidates ---
         rerank = RerankService()
         if rerank.available:
-            scored = await rerank.rerank(
-                request.query, scored, text_of=lambda s: s["content"]
-            )
+            scored = await rerank.rerank(request.query, scored, text_of=lambda s: s["content"])
 
         # --- Phase 10: spread domains so no single site dominates ----------
         scored = DiversityService().diversify(
@@ -295,17 +311,24 @@ class RetrievalRouter:
             g = s["g"]
             results.append(
                 SearchResult(
-                    rank=pos, title=g["title"], url=g["url"], content=s["content"],
+                    rank=pos,
+                    title=g["title"],
+                    url=g["url"],
+                    content=s["content"],
                     chunks=g["chunks"],
                     score=s["final"],
-                    char_count=len(s["content"]), chunk_count=len(g["chunks"]),
+                    char_count=len(s["content"]),
+                    chunk_count=len(g["chunks"]),
                 )
             )
             sources.append(
                 RetrievedSource(
-                    title=g["title"], url=g["url"],
-                    trust=round(s["trust"], 4), freshness=round(s["fresh"], 4),
-                    similarity=round(s["sim"], 4), from_memory=True,
+                    title=g["title"],
+                    url=g["url"],
+                    trust=round(s["trust"], 4),
+                    freshness=round(s["fresh"], 4),
+                    similarity=round(s["sim"], 4),
+                    from_memory=True,
                 )
             )
 
@@ -322,8 +345,11 @@ class RetrievalRouter:
             4,
         )
         return {
-            "results": results, "sources": sources, "confidence": confidence,
-            "top_sim": top_sim, "avg_freshness": avg_fresh,
+            "results": results,
+            "sources": sources,
+            "confidence": confidence,
+            "top_sim": top_sim,
+            "avg_freshness": avg_fresh,
         }
 
     # ------------------------------------------------------ answer paths
@@ -338,9 +364,7 @@ class RetrievalRouter:
 
         answer_text, answer_model, degraded = "", "", False
         try:
-            answer = await AnswerService(
-                model=request.llm_model
-            ).synthesize(request.query, results)
+            answer = await AnswerService(model=request.llm_model).synthesize(request.query, results)
             if answer.ok:
                 answer_text, answer_model = answer.answer, answer.model
                 trace.append(f"synthesized answer from memory via {answer_model}")
@@ -361,18 +385,21 @@ class RetrievalRouter:
             from_memory=True,
             confidence=memory["confidence"],
             processing_time_ms=int((time.monotonic() - start) * 1000),
-            answer=answer_text, answer_model=answer_model,
-            citations_markdown=citations_md, citations_json=citations_json,
-            results=results, sources=memory["sources"],
-            citation_support=cite_support, unsupported_citations=unsupported,
-            routing_trace=trace, degraded=degraded,
+            answer=answer_text,
+            answer_model=answer_model,
+            citations_markdown=citations_md,
+            citations_json=citations_json,
+            results=results,
+            sources=memory["sources"],
+            citation_support=cite_support,
+            unsupported_citations=unsupported,
+            routing_trace=trace,
+            degraded=degraded,
         )
         await self.cache.set(cache_key, response.model_dump())
         return response
 
-    def _verify_citations(
-        self, answer: str, results, trace: list[str]
-    ) -> tuple[float, list[int]]:
+    def _verify_citations(self, answer: str, results, trace: list[str]) -> tuple[float, list[int]]:
         """Phase 10: check the answer's [n] citations point at on-topic sources."""
         if not settings.enable_citation_verification or not answer:
             return 0.0, []
@@ -386,11 +413,9 @@ class RetrievalRouter:
                 trace.append(f"unsupported citations: {v.unsupported_markers}")
         return v.support_rate, v.unsupported_markers
 
-    async def _web(
-        self, request, cls, mode, trace, start, cache_key
-    ) -> HybridSearchResponse:
+    async def _web(self, request, cls, mode, trace, start, cache_key) -> HybridSearchResponse:
         """Run the full web pipeline and adapt its response to the hybrid shape."""
-        is_deep = (mode == RetrievalMode.DEEP)
+        is_deep = mode == RetrievalMode.DEEP
         queries_to_run = [request.query]
         max_results = request.max_results
 
@@ -451,24 +476,30 @@ class RetrievalRouter:
                     if res.url not in seen_urls:
                         seen_urls.add(res.url)
                         pooled_results.append(res)
-            
-            trace.append(f"DEEP mode → pooled {len(pooled_results)} unique results across {len(queries_to_run)} crawls")
+
+            trace.append(
+                f"DEEP mode → pooled {len(pooled_results)} unique results across {len(queries_to_run)} crawls"
+            )
             if not pooled_results:
                 trace.append("all deep crawls failed or returned empty")
                 return self._empty(request, cls, mode, trace, start)
 
             # Rerank
             if RerankService().available:
-                pooled_results = await RerankService().rerank(request.query, pooled_results, text_of=lambda x: x.content)
-            
+                pooled_results = await RerankService().rerank(
+                    request.query, pooled_results, text_of=lambda x: x.content
+                )
+
             # Truncate and recompute ranks
-            pooled_results = pooled_results[:request.max_results]
+            pooled_results = pooled_results[: request.max_results]
             for i, res in enumerate(pooled_results):
                 res.rank = i + 1
 
             # Synthesize Answer
             answer_text, answer_model = "", ""
-            answer = await AnswerService(model=request.llm_model).synthesize(request.query, pooled_results)
+            answer = await AnswerService(model=request.llm_model).synthesize(
+                request.query, pooled_results
+            )
             if answer.ok:
                 answer_text, answer_model = answer.answer, answer.model
             else:
@@ -478,9 +509,12 @@ class RetrievalRouter:
             # Store final result
             elapsed_ms = int((time.monotonic() - start) * 1000)
             from app.services.graph_service import GraphService
+
             query_id = await StoreService(self.db, self.workspace_id).save(
-                query=request.query, params={"mode": "DEEP"},
-                results=pooled_results, processing_ms=elapsed_ms
+                query=request.query,
+                params={"mode": "DEEP"},
+                results=pooled_results,
+                processing_ms=elapsed_ms,
             )
             if settings.enable_knowledge_graph and query_id:
                 await GraphService(self.db).build_edges()
@@ -488,27 +522,35 @@ class RetrievalRouter:
             # Create mock SearchResponse for standard downstream processing
             citations_md = CitationService().generate_citations_block(pooled_results)
             citations_json = CitationService().generate_json_citations(pooled_results)
-            
+
             from app.models.response import SearchResponse
+
             web = SearchResponse(
-                query=request.query, total_results=len(pooled_results),
-                processing_time_ms=elapsed_ms, results=pooled_results,
-                citations_markdown=citations_md, citations_json=citations_json,
-                degraded=degraded, trace=[], answer=answer_text, answer_model=answer_model
+                query=request.query,
+                total_results=len(pooled_results),
+                processing_time_ms=elapsed_ms,
+                results=pooled_results,
+                citations_markdown=citations_md,
+                citations_json=citations_json,
+                degraded=degraded,
+                trace=[],
+                answer=answer_text,
+                answer_model=answer_model,
             )
 
         sources = [
             RetrievedSource(
-                title=r.title, url=r.url, trust=round(r.score, 4),
-                freshness=1.0, from_memory=False,
+                title=r.title,
+                url=r.url,
+                trust=round(r.score, 4),
+                freshness=1.0,
+                from_memory=False,
             )
             for r in web.results
         ]
         trace.append(f"web crawl returned {len(web.results)} results")
 
-        cite_support, unsupported = self._verify_citations(
-            web.answer, web.results, trace
-        )
+        cite_support, unsupported = self._verify_citations(web.answer, web.results, trace)
 
         response = HybridSearchResponse(
             query=request.query,
@@ -518,12 +560,16 @@ class RetrievalRouter:
             from_memory=False,
             confidence=1.0 if web.results else 0.0,
             processing_time_ms=int((time.monotonic() - start) * 1000),
-            answer=web.answer, answer_model=web.answer_model,
+            answer=web.answer,
+            answer_model=web.answer_model,
             citations_markdown=web.citations_markdown,
             citations_json=web.citations_json,
-            results=web.results, sources=sources,
-            citation_support=cite_support, unsupported_citations=unsupported,
-            routing_trace=trace, degraded=web.degraded,
+            results=web.results,
+            sources=sources,
+            citation_support=cite_support,
+            unsupported_citations=unsupported,
+            routing_trace=trace,
+            degraded=web.degraded,
         )
         if mode in (RetrievalMode.FAST, RetrievalMode.HYBRID):
             await self.cache.set(cache_key, response.model_dump())
@@ -538,5 +584,6 @@ class RetrievalRouter:
             from_memory=False,
             confidence=0.0,
             processing_time_ms=int((time.monotonic() - start) * 1000),
-            routing_trace=trace, degraded=True,
+            routing_trace=trace,
+            degraded=True,
         )

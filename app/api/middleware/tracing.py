@@ -3,6 +3,7 @@
 Clients can pass X-Request-ID; otherwise one is generated. The ID is echoed
 back in the response header and included in all log lines via contextvars.
 """
+
 import uuid
 import logging
 from contextvars import ContextVar
@@ -24,13 +25,16 @@ class RequestTracingMiddleware(BaseHTTPMiddleware):
 
         logger.debug(
             "request_started method=%s path=%s req_id=%s",
-            request.method, request.url.path, req_id,
+            request.method,
+            request.url.path,
+            req_id,
         )
         response = await call_next(request)
         response.headers["X-Request-ID"] = req_id
 
         logger.debug(
             "request_completed status=%s req_id=%s",
-            response.status_code, req_id,
+            response.status_code,
+            req_id,
         )
         return response

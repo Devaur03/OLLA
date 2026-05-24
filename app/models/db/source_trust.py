@@ -19,12 +19,15 @@ class SourceTrust(Base):
     Phase 12: the primary key is now (workspace_id, domain) so each workspace
     maintains independent trust rankings.
     """
+
     __tablename__ = "source_trust"
 
     # Phase 12: composite primary key (workspace_id, domain)
     workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"),
-        primary_key=True, default=DEFAULT_WORKSPACE_ID,
+        String(36),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        primary_key=True,
+        default=DEFAULT_WORKSPACE_ID,
     )
     domain: Mapped[str] = mapped_column(String(255), primary_key=True)
 

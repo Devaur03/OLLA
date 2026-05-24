@@ -10,20 +10,23 @@ if TYPE_CHECKING:
     from app.models.db.query import StoredQuery
     from app.models.db.chunk import StoredChunk
 
+
 class StoredResult(Base):
     """Persisted search result linked to a query."""
+
     __tablename__ = "results"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     query_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("queries.id", ondelete="CASCADE"), nullable=False
     )
     # Phase 12: multi-tenant workspace scoping
     workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"),
-        nullable=False, default=DEFAULT_WORKSPACE_ID, index=True,
+        String(36),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False,
+        default=DEFAULT_WORKSPACE_ID,
+        index=True,
     )
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=True)

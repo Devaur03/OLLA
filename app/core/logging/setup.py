@@ -10,6 +10,7 @@ Usage:
     logger = structlog.get_logger(__name__)
     logger.info("search_started", query=query, max_results=5)
 """
+
 import logging
 import logging.handlers
 import sys
@@ -18,6 +19,7 @@ import time
 
 try:
     import structlog
+
     HAS_STRUCTLOG = True
 except ImportError:
     HAS_STRUCTLOG = False
@@ -123,5 +125,6 @@ def get_logger(name: str):
     """Return a logger — structlog if available, stdlib otherwise."""
     if HAS_STRUCTLOG:
         import structlog
+
         return structlog.get_logger(name)
     return logging.getLogger(name)

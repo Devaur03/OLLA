@@ -1,4 +1,5 @@
 """SQLAlchemy ORM model for the api_keys table."""
+
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
@@ -18,25 +19,29 @@ if TYPE_CHECKING:
 class ApiKey(Base):
     __tablename__ = "api_keys"
 
-    id:         Mapped[str]  = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id:    Mapped[str]  = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    key_hash:   Mapped[str]  = mapped_column(String(64),  unique=True, nullable=False)
-    key_prefix: Mapped[str]  = mapped_column(String(20),  nullable=False)
-    name:       Mapped[str]  = mapped_column(String(255), nullable=False, default="Default key")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    key_prefix: Mapped[str] = mapped_column(String(20), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, default="Default key")
     # RBAC (migration 006): 'admin' | 'member'. Gates the /admin/* endpoints.
-    role:       Mapped[str]  = mapped_column(String(20), nullable=False, default="member")
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="member")
     # Phase 12: each key is scoped to a workspace
     workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"),
-        nullable=False, default=DEFAULT_WORKSPACE_ID,
+        String(36),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False,
+        default=DEFAULT_WORKSPACE_ID,
     )
-    is_active:  Mapped[bool] = mapped_column(Boolean(), nullable=False, default=True)
+    is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    user:         Mapped["User"]          = relationship(back_populates="api_keys")
+    user: Mapped["User"] = relationship(back_populates="api_keys")
     usage_events: Mapped[list["UsageEvent"]] = relationship(back_populates="api_key")
-    workspace:    Mapped["Workspace"]     = relationship(back_populates="api_keys")
+    workspace: Mapped["Workspace"] = relationship(back_populates="api_keys")

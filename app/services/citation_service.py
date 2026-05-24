@@ -32,9 +32,7 @@ class CitationService:
             title = result.title or result.url
             today = date.today().strftime("%Y-%m-%d")
             lines.append(
-                f"{i}. [{title}]({result.url}) "
-                f"— Relevance: {result.score:.2f} "
-                f"— Retrieved: {today}"
+                f"{i}. [{title}]({result.url}) — Relevance: {result.score:.2f} — Retrieved: {today}"
             )
 
         return "\n".join(lines)

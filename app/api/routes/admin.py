@@ -32,10 +32,12 @@ router = APIRouter(prefix="/api/v1/admin", tags=["admin"], dependencies=[require
 
 class PurgeRequest(BaseModel):
     """Body for a retention purge. `days` defaults to settings.retention_days."""
+
     days: int | None = Field(
-        default=None, ge=1,
+        default=None,
+        ge=1,
         description="Delete records older than this many days "
-                    "(defaults to the configured RETENTION_DAYS)",
+        "(defaults to the configured RETENTION_DAYS)",
     )
 
 
@@ -57,13 +59,12 @@ async def retention_purge(
 
     Fails with 400 if neither is set, so a purge can never run unbounded.
     """
-    days = (request.days if request and request.days is not None
-            else settings.retention_days)
+    days = request.days if request and request.days is not None else settings.retention_days
     if not days or days <= 0:
         raise HTTPException(
             status_code=400,
             detail="No retention window: pass 'days' in the body or set "
-                   "RETENTION_DAYS in the environment.",
+            "RETENTION_DAYS in the environment.",
         )
     try:
         deleted = await RetentionService(db).purge(days)
@@ -77,8 +78,7 @@ async def retention_purge(
 
 @router.get("/export")
 async def export_data(
-    limit: int = Query(default=1000, ge=1, le=100_000,
-                       description="Max rows per section"),
+    limit: int = Query(default=1000, ge=1, le=100_000, description="Max rows per section"),
     db: AsyncSession = Depends(get_db_session),
 ):
     """Export sources, feedback, learned source trust, and query history."""
@@ -104,7 +104,7 @@ async def import_data(
         raise HTTPException(
             status_code=400,
             detail="Body must be an export document with a 'source_trust' "
-                   "and/or 'feedback' section.",
+            "and/or 'feedback' section.",
         )
     try:
         return await ImportService(db).import_data(payload)

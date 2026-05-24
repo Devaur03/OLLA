@@ -5,6 +5,7 @@ and AnswerService context building.
 (File kept under its original path; it now covers live components that
 replaced the archived SearchOrchestrator.)
 """
+
 import pytest
 
 from app.models.request import GraphSearchRequest, SafeSearchLevel, SearchRequest, TimeLimit
@@ -61,10 +62,26 @@ def test_search_service_url_validation():
 
 def test_answer_service_context_builder_numbers_sources():
     results = [
-        SearchResult(rank=1, title="IBM", url="https://ibm.com", content="IBM info " * 20,
-                     chunks=[], score=0.9, char_count=200, chunk_count=2),
-        SearchResult(rank=2, title="Wiki", url="https://wikipedia.org", content="more " * 20,
-                     chunks=[], score=0.8, char_count=100, chunk_count=1),
+        SearchResult(
+            rank=1,
+            title="IBM",
+            url="https://ibm.com",
+            content="IBM info " * 20,
+            chunks=[],
+            score=0.9,
+            char_count=200,
+            chunk_count=2,
+        ),
+        SearchResult(
+            rank=2,
+            title="Wiki",
+            url="https://wikipedia.org",
+            content="more " * 20,
+            chunks=[],
+            score=0.8,
+            char_count=100,
+            chunk_count=1,
+        ),
     ]
     ctx = AnswerService()._build_context(results)
     assert "[1]" in ctx and "[2]" in ctx

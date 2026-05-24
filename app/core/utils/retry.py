@@ -1,4 +1,5 @@
 """Exponential backoff retry decorator for async functions."""
+
 import asyncio
 import logging
 from typing import Callable, Type
@@ -26,6 +27,7 @@ def async_retry(
         async def fetch(url: str) -> str:
             ...
     """
+
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -37,15 +39,23 @@ def async_retry(
                     if attempt == max_attempts:
                         logger.error(
                             "retry[%s]: all %d attempts failed. Last error: %s",
-                            func.__name__, max_attempts, exc,
+                            func.__name__,
+                            max_attempts,
+                            exc,
                         )
                         raise
                     wait = min(delay, max_delay)
                     logger.warning(
                         "retry[%s]: attempt %d/%d failed (%s). Retrying in %.1fs...",
-                        func.__name__, attempt, max_attempts, exc, wait,
+                        func.__name__,
+                        attempt,
+                        max_attempts,
+                        exc,
+                        wait,
                     )
                     await asyncio.sleep(wait)
                     delay *= 2
+
         return wrapper
+
     return decorator

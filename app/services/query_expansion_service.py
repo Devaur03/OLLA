@@ -24,10 +24,23 @@ logger = logging.getLogger(__name__)
 
 # Conversational filler that adds no retrieval signal.
 _FILLER = [
-    "can you tell me", "could you tell me", "i want to know", "i would like to know",
-    "please tell me", "tell me about", "i need to know", "help me understand",
-    "can you explain", "could you explain", "please explain", "explain to me",
-    "i am looking for", "i'm looking for", "what i want is", "please", "kindly",
+    "can you tell me",
+    "could you tell me",
+    "i want to know",
+    "i would like to know",
+    "please tell me",
+    "tell me about",
+    "i need to know",
+    "help me understand",
+    "can you explain",
+    "could you explain",
+    "please explain",
+    "explain to me",
+    "i am looking for",
+    "i'm looking for",
+    "what i want is",
+    "please",
+    "kindly",
 ]
 _FILLER_RE = re.compile("|".join(re.escape(f) for f in _FILLER), re.IGNORECASE)
 

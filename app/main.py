@@ -6,6 +6,7 @@ Middleware order (outermost = first on request):
 
 Routers: health, search, semantic, keys, billing, dashboard
 """
+
 import asyncio
 import logging
 import sys
@@ -57,37 +58,47 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.add_middleware(RequestTracingMiddleware)
-    app.add_middleware(RateLimitMiddleware)    # reject over-limit before metering
-    app.add_middleware(UsageMeterMiddleware)   # reads state set by AuthMiddleware
-    app.add_middleware(AuthMiddleware)         # must be innermost so state is set first
+    app.add_middleware(RateLimitMiddleware)  # reject over-limit before metering
+    app.add_middleware(UsageMeterMiddleware)  # reads state set by AuthMiddleware
+    app.add_middleware(AuthMiddleware)  # must be innermost so state is set first
 
     register_handlers(app)
 
     # Routers
-    app.include_router(health.router,   prefix="/api/v1")
-    app.include_router(search.router,   prefix="/api/v1")
+    app.include_router(health.router, prefix="/api/v1")
+    app.include_router(search.router, prefix="/api/v1")
     app.include_router(semantic.router, prefix="/api/v1")
-    app.include_router(hybrid.router,   prefix="/api/v1")
+    app.include_router(hybrid.router, prefix="/api/v1")
     app.include_router(feedback.router, prefix="/api/v1")
-    app.include_router(graph.router,    prefix="/api/v1")
-    app.include_router(keys.router)       # prefix defined in router: /api/v1/keys
-    app.include_router(billing.router)    # prefix defined in router: /api/v1/billing
-    app.include_router(admin.router)      # prefix defined in router: /api/v1/admin
-    app.include_router(sources.router)    # prefix defined in router: /api/v1/sources
+    app.include_router(graph.router, prefix="/api/v1")
+    app.include_router(keys.router)  # prefix defined in router: /api/v1/keys
+    app.include_router(billing.router)  # prefix defined in router: /api/v1/billing
+    app.include_router(admin.router)  # prefix defined in router: /api/v1/admin
+    app.include_router(sources.router)  # prefix defined in router: /api/v1/sources
     app.include_router(workspaces.router)  # prefix defined in router: /api/v1/workspaces
     app.include_router(dashboard.router)  # legacy self-contained UI at /dashboard
 
     # Mount static files and SPA route if frontend/dist exists
-    frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
+    frontend_dist = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist"
+    )
     if os.path.exists(frontend_dist):
-        app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+        app.mount(
+            "/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets"
+        )
 
         @app.get("/{path_name:path}", include_in_schema=False)
         async def catch_all(path_name: str):
-            if path_name.startswith("api/") or path_name.startswith("openapi.json") or path_name.startswith("docs") or path_name.startswith("redoc"):
+            if (
+                path_name.startswith("api/")
+                or path_name.startswith("openapi.json")
+                or path_name.startswith("docs")
+                or path_name.startswith("redoc")
+            ):
                 from fastapi import HTTPException
+
                 raise HTTPException(status_code=404, detail="Not Found")
-            
+
             # Check if requested path matches a file directly (e.g. favicon.svg, icons.svg)
             file_path = os.path.join(frontend_dist, path_name)
             if os.path.isfile(file_path):
@@ -99,7 +110,6 @@ def create_app() -> FastAPI:
                 return FileResponse(index_path)
 
             return HTMLResponse(content="<h3>Frontend is building... Please refresh.</h3>")
-
 
     @app.on_event("startup")
     async def on_startup() -> None:

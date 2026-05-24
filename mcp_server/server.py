@@ -49,7 +49,9 @@ async def list_tools() -> list[types.Tool]:
                     "max_results": {
                         "type": "integer",
                         "description": "Number of web pages to retrieve (1-10)",
-                        "default": 5, "minimum": 1, "maximum": 10,
+                        "default": 5,
+                        "minimum": 1,
+                        "maximum": 10,
                     },
                     "chunk_size": {
                         "type": "integer",
@@ -116,7 +118,9 @@ async def list_tools() -> list[types.Tool]:
                     "top_k": {
                         "type": "integer",
                         "description": "Chunks from memory / results to crawl",
-                        "default": 8, "minimum": 1, "maximum": 50,
+                        "default": 8,
+                        "minimum": 1,
+                        "maximum": 50,
                     },
                     "force_refresh": {
                         "type": "boolean",
@@ -149,8 +153,12 @@ async def list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": "The feedback signal",
                         "enum": [
-                            "useful", "not_useful", "incorrect",
-                            "outdated", "bad_source", "missing_context",
+                            "useful",
+                            "not_useful",
+                            "incorrect",
+                            "outdated",
+                            "bad_source",
+                            "missing_context",
                         ],
                     },
                     "query_id": {
@@ -193,7 +201,9 @@ async def list_tools() -> list[types.Tool]:
                     "hops": {
                         "type": "integer",
                         "description": "Edges to traverse from each seed (1-4)",
-                        "default": 2, "minimum": 1, "maximum": 4,
+                        "default": 2,
+                        "minimum": 1,
+                        "maximum": 4,
                     },
                     "seed_k": {
                         "type": "integer",
@@ -302,7 +312,7 @@ async def _call(
         return _text(response.text)
     except httpx.ConnectError:
         return _error(
-            "Cannot connect to the Hybrid Search backend",
+            "Cannot connect to the OLLA backend",
             f"Is the FastAPI server running at {BACKEND_URL}?",
         )
     except httpx.HTTPStatusError as e:
@@ -387,24 +397,25 @@ async def _handle_get_source(arguments: dict) -> list[types.TextContent]:
 
 
 async def _handle_refresh_source(arguments: dict) -> list[types.TextContent]:
-    return await _post(
-        f"/sources/{arguments['result_id']}/refresh", {}, timeout=90.0
-    )
+    return await _post(f"/sources/{arguments['result_id']}/refresh", {}, timeout=90.0)
 
 
 # --- MCP resources --------------------------------------------------------
 # Read-only views an agent can browse without calling a tool.
 _RESOURCES: dict[str, tuple[str, str, str]] = {
     "hybrid-search://trusted-domains": (
-        "/sources/trusted-domains", "Trusted domains",
+        "/sources/trusted-domains",
+        "Trusted domains",
         "Learned per-domain trust ranking",
     ),
     "hybrid-search://recent-queries": (
-        "/sources/recent-queries", "Recent queries",
+        "/sources/recent-queries",
+        "Recent queries",
         "Recent query history with result counts",
     ),
     "hybrid-search://retrieval-stats": (
-        "/feedback/stats", "Retrieval stats",
+        "/feedback/stats",
+        "Retrieval stats",
         "Aggregate feedback analytics and source quality",
     ),
 }
@@ -415,7 +426,10 @@ async def list_resources() -> list[types.Resource]:
     """Declare the read-only resources an agent can browse."""
     return [
         types.Resource(
-            uri=uri, name=name, description=desc, mimeType="application/json",
+            uri=uri,
+            name=name,
+            description=desc,
+            mimeType="application/json",
         )
         for uri, (_, name, desc) in _RESOURCES.items()
     ]
@@ -433,11 +447,13 @@ async def read_resource(uri) -> str:
 
 async def main():
     """Run the MCP server over stdio."""
-    logger.info("Starting Hybrid Search MCP Server")
+    logger.info("Starting OLLA MCP Server")
     logger.info("Backend URL: %s", BACKEND_URL)
-    logger.info("Tools: web_search, semantic_search, hybrid_search, "
-                "submit_feedback, graph_search, feedback_stats, "
-                "get_source, refresh_source")
+    logger.info(
+        "Tools: web_search, semantic_search, hybrid_search, "
+        "submit_feedback, graph_search, feedback_stats, "
+        "get_source, refresh_source"
+    )
     logger.info("Resources: trusted-domains, recent-queries, retrieval-stats")
 
     async with stdio_server() as (read_stream, write_stream):

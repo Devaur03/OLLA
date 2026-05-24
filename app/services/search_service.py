@@ -30,17 +30,26 @@ from app.models.response import SearchCandidate
 # Kept directly after the imports above so it is not flagged as a late import.
 try:
     from ddgs import DDGS  # type: ignore
+
     _SEARCH_PKG = "ddgs"
 except ImportError:  # pragma: no cover
     from duckduckgo_search import DDGS  # type: ignore
+
     _SEARCH_PKG = "duckduckgo_search"
 
 logger = logging.getLogger(__name__)
 
 BLOCKED_DOMAINS = [
-    "youtube.com", "youtu.be", "twitter.com", "x.com",
-    "instagram.com", "facebook.com", "tiktok.com",
-    "reddit.com/r/", "pinterest.com", "linkedin.com/in/",
+    "youtube.com",
+    "youtu.be",
+    "twitter.com",
+    "x.com",
+    "instagram.com",
+    "facebook.com",
+    "tiktok.com",
+    "reddit.com/r/",
+    "pinterest.com",
+    "linkedin.com/in/",
 ]
 
 _DDG_MAX_ATTEMPTS = 3
@@ -73,9 +82,9 @@ class SearchService:
             # pass is enough. We still keep an explicit-engine retry below.
             self.backends = ["auto"]
         else:
-            self.backends = [
-                b.strip() for b in settings.ddg_backends.split(",") if b.strip()
-            ] or ["auto"]
+            self.backends = [b.strip() for b in settings.ddg_backends.split(",") if b.strip()] or [
+                "auto"
+            ]
         logger.info("SearchService: using %s package", _SEARCH_PKG)
 
     async def search(
@@ -108,9 +117,7 @@ class SearchService:
                 return candidates
 
         if settings.brave_api_key:
-            logger.warning(
-                "SearchService: web search exhausted — falling back to Brave Search."
-            )
+            logger.warning("SearchService: web search exhausted — falling back to Brave Search.")
             candidates = await self._search_brave(query)
             if candidates:
                 return candidates
@@ -130,24 +137,27 @@ class SearchService:
     ) -> list[SearchCandidate]:
         """Try each configured backend in order; first one with results wins."""
         for backend in self.backends:
-            raw = await self._search_one_backend(
-                query, safesearch, timelimit, region, backend
-            )
+            raw = await self._search_one_backend(query, safesearch, timelimit, region, backend)
             candidates = self._filter_candidates(raw)
             if candidates:
                 logger.info(
                     "SearchService [%s/%s]: %d candidates for %r",
-                    _SEARCH_PKG, backend, len(candidates), query,
+                    _SEARCH_PKG,
+                    backend,
+                    len(candidates),
+                    query,
                 )
                 return candidates
-            logger.warning(
-                "SearchService [%s/%s]: no usable results.", _SEARCH_PKG, backend
-            )
+            logger.warning("SearchService [%s/%s]: no usable results.", _SEARCH_PKG, backend)
         return []
 
     async def _search_one_backend(
-        self, query: str, safesearch: str, timelimit: str | None,
-        region: str, backend: str,
+        self,
+        query: str,
+        safesearch: str,
+        timelimit: str | None,
+        region: str,
+        backend: str,
     ) -> list[dict]:
         """Run one backend with retry-with-backoff on rate-limit errors."""
         fetch_count = self.max_results * 3
@@ -169,21 +179,31 @@ class SearchService:
                     wait = min(delay, _DDG_MAX_DELAY)
                     logger.warning(
                         "SearchService [%s]: %s (attempt %d/%d). Retrying in %.1fs.",
-                        backend, "rate limit" if is_rate else exc,
-                        attempt, _DDG_MAX_ATTEMPTS, wait,
+                        backend,
+                        "rate limit" if is_rate else exc,
+                        attempt,
+                        _DDG_MAX_ATTEMPTS,
+                        wait,
                     )
                     await asyncio.sleep(wait)
                     delay *= 2
                 else:
                     logger.error(
                         "SearchService [%s]: failed after %d attempts: %s",
-                        backend, _DDG_MAX_ATTEMPTS, exc,
+                        backend,
+                        _DDG_MAX_ATTEMPTS,
+                        exc,
                     )
         return []
 
     def _ddg_sync(
-        self, query: str, fetch_count: int, safesearch: str,
-        timelimit: str | None, region: str, backend: str,
+        self,
+        query: str,
+        fetch_count: int,
+        safesearch: str,
+        timelimit: str | None,
+        region: str,
+        backend: str,
     ) -> list[dict]:
         """
         Blocking search call — always run inside a thread-pool executor.
@@ -254,9 +274,7 @@ class SearchService:
                 if len(candidates) >= self.max_results:
                     break
 
-            logger.info(
-                "SearchService [Brave]: %d candidates for %r", len(candidates), query
-            )
+            logger.info("SearchService [Brave]: %d candidates for %r", len(candidates), query)
             return candidates
 
         except httpx.HTTPStatusError as e:

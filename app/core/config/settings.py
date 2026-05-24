@@ -8,6 +8,7 @@ Environment variables use double-underscore as nested delimiter:
 For convenience, the flat variable names from the old config.py still work
 because pydantic-settings also reads them via env_prefix.
 """
+
 from __future__ import annotations
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,7 +16,7 @@ from functools import lru_cache
 
 
 class SearchSettings(BaseSettings):
-    provider: str = "duckduckgo"          # duckduckgo | brave
+    provider: str = "duckduckgo"  # duckduckgo | brave
     max_results: int = 5
     max_chars_per_page: int = 8000
     fetch_timeout_seconds: int = 15
@@ -34,7 +35,7 @@ class ChunkSettings(BaseSettings):
 
 
 class CacheSettings(BaseSettings):
-    provider: str = "redis"               # redis | memory
+    provider: str = "redis"  # redis | memory
     url: str = "redis://localhost:6379"
     ttl_seconds: int = 3600
 
@@ -51,7 +52,7 @@ class DatabaseSettings(BaseSettings):
 
 
 class EmbeddingSettings(BaseSettings):
-    provider: str = "local"               # local | openai
+    provider: str = "local"  # local | openai
     openai_api_key: str = ""
     model: str = "text-embedding-3-small"
     dimensions: int = 1536
@@ -62,7 +63,8 @@ class EmbeddingSettings(BaseSettings):
 
 class AppSettings(BaseSettings):
     """Top-level settings object — compose sub-settings via nested fields."""
-    name: str = "Hybrid Search for Agents"
+
+    name: str = "OLLA"
     version: str = "0.1.0"
     debug: bool = False
     log_json: bool = False

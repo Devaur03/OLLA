@@ -1,4 +1,5 @@
 """SQLAlchemy ORM model for the workspaces table (Phase 12)."""
+
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
@@ -27,11 +28,10 @@ class Workspace(Base):
     source-trust row belongs to exactly one workspace.  API keys are bound
     to a workspace so requests are automatically scoped.
     """
+
     __tablename__ = "workspaces"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     owner_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
@@ -42,6 +42,4 @@ class Workspace(Base):
 
     # Relationships
     owner: Mapped["User"] = relationship("User", back_populates="workspaces")
-    api_keys: Mapped[list["ApiKey"]] = relationship(
-        "ApiKey", back_populates="workspace"
-    )
+    api_keys: Mapped[list["ApiKey"]] = relationship("ApiKey", back_populates="workspace")

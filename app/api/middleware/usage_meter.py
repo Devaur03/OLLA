@@ -36,10 +36,10 @@ logger = logging.getLogger(__name__)
 
 # Monthly query limits per plan  (None = unlimited)
 PLAN_LIMITS: dict[str, int | None] = {
-    "free":       1_000,
-    "starter":   10_000,
-    "pro":       50_000,
-    "team":     200_000,
+    "free": 1_000,
+    "starter": 10_000,
+    "pro": 50_000,
+    "team": 200_000,
     "enterprise": None,
 }
 
@@ -52,7 +52,7 @@ _EXEMPT_PATHS = {
     "/dashboard",
     "/billing",
     "/api/v1/keys/register",
-    "/api/v1/billing/webhook",   # Stripe webhook — never metered
+    "/api/v1/billing/webhook",  # Stripe webhook — never metered
 }
 
 _METERED_PATHS_PREFIX = "/api/v1/search"  # only search endpoints consume quota
@@ -83,8 +83,8 @@ class UsageMeterMiddleware(BaseHTTPMiddleware):
 
         # Auth middleware sets these on request.state when key is valid
         api_key_id: str | None = getattr(request.state, "api_key_id", None)
-        user_id:    str | None = getattr(request.state, "user_id",    None)
-        user_plan:  str        = getattr(request.state, "user_plan",  "free")
+        user_id: str | None = getattr(request.state, "user_id", None)
+        user_plan: str = getattr(request.state, "user_plan", "free")
 
         if not user_id:
             # No authenticated user — let AuthMiddleware's 403 handle it
@@ -98,7 +98,10 @@ class UsageMeterMiddleware(BaseHTTPMiddleware):
                 if count >= limit:
                     logger.warning(
                         "Quota exceeded: user=%s plan=%s count=%d limit=%d",
-                        user_id, user_plan, count, limit,
+                        user_id,
+                        user_plan,
+                        count,
+                        limit,
                     )
                     return JSONResponse(
                         status_code=429,
@@ -108,9 +111,9 @@ class UsageMeterMiddleware(BaseHTTPMiddleware):
                                 f"'{user_plan}' plan). "
                                 "Upgrade at /dashboard to continue."
                             ),
-                            "plan":        user_plan,
-                            "used":        count,
-                            "limit":       limit,
+                            "plan": user_plan,
+                            "used": count,
+                            "limit": limit,
                             "upgrade_url": "/dashboard#billing",
                         },
                     )
@@ -139,6 +142,7 @@ class UsageMeterMiddleware(BaseHTTPMiddleware):
 
 # ── DB helpers (async, import lazily to avoid circular imports) ───────────────
 
+
 async def _count_monthly_usage(user_id: str) -> int:
     """Return the number of search queries the user has made this calendar month."""
     from sqlalchemy import select, func, and_
@@ -164,8 +168,8 @@ async def _count_monthly_usage(user_id: str) -> int:
 async def _record_usage(
     *,
     api_key_id: str | None,
-    user_id:    str | None,
-    endpoint:   str,
+    user_id: str | None,
+    endpoint: str,
     response_time_ms: int,
     status_code: int,
 ) -> None:
@@ -180,7 +184,7 @@ async def _record_usage(
             user_id=user_id,
             endpoint=endpoint,
             response_time_ms=response_time_ms,
-            cache_hit=False,    # updated retroactively if needed
+            cache_hit=False,  # updated retroactively if needed
             status_code=status_code,
         )
         session.add(event)

@@ -11,6 +11,14 @@ from app.models.db.feedback import Feedback
 from app.models.db.source_trust import SourceTrust
 
 __all__ = [
-    "Base", "Workspace", "StoredQuery", "StoredResult", "StoredChunk", "User",
-    "ApiKey", "UsageEvent", "Feedback", "SourceTrust",
+    "Base",
+    "Workspace",
+    "StoredQuery",
+    "StoredResult",
+    "StoredChunk",
+    "User",
+    "ApiKey",
+    "UsageEvent",
+    "Feedback",
+    "SourceTrust",
 ]
