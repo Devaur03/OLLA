@@ -1,8 +1,158 @@
-@import "tailwindcss";
-@config "../tailwind.config.js";
+/* ============================================================
+   OLLA — base theme. Dark, terminal-flavoured, cyan→violet.
+   ============================================================ */
 
-body {
-  background-color: #0e0e0e;
-  color: #e5e2e1;
+:root {
+  --bg: #070a11;
+  --bg-2: #0a0e16;
+  --panel: #0d1220;
+  --panel-2: #111727;
+  --panel-3: #151c30;
+  --border: #1f2738;
+  --border-2: #2b3650;
+
+  --text: #e7eaf2;
+  --text-dim: #8b95ab;
+  --text-mute: #545d73;
+
+  --cyan: #22d3ee;
+  --indigo: #7c8cf8;
+  --violet: #c084fc;
+  --magenta: #e879f9;
+  --green: #4ade80;
+  --amber: #fbbf24;
+  --red: #f87171;
+
+  --grad: linear-gradient(100deg, #22d3ee 0%, #7c8cf8 52%, #c084fc 100%);
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  --radius: 14px;
+  --nav-h: 64px;
 }
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  overflow-x: hidden;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  z-index: -2;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+body::before {
+  width: 46vw;
+  height: 46vw;
+  top: -14vw;
+  left: -10vw;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.4), transparent 68%);
+  animation: drift-a 26s ease-in-out infinite;
+}
+body::after {
+  width: 52vw;
+  height: 52vw;
+  bottom: -22vw;
+  right: -16vw;
+  background: radial-gradient(circle, rgba(192, 132, 252, 0.34), transparent 70%);
+  animation: drift-b 32s ease-in-out infinite;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+#root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(124, 140, 248, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 140, 248, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 35%, transparent 80%);
+  mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 35%, transparent 80%);
+  pointer-events: none;
+}
+
+@keyframes drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(10vw, 8vh) scale(1.16); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-9vw, -7vh) scale(1.2); }
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+input,
+select,
+textarea {
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+::selection {
+  background: rgba(124, 140, 248, 0.35);
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 6px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a4768;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

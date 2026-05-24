@@ -4,6 +4,26 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+# The local embedding model is expensive to construct. Cache it process-wide
+# so it loads once — not on every EmbedService() instance / every search.
+_LOCAL_MODEL = None
+
+
+def _load_local_model():
+    """Load (once) and return the cached local sentence-transformers model."""
+    global _LOCAL_MODEL
+    if _LOCAL_MODEL is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError as e:  # noqa: BLE001
+            raise RuntimeError(
+                "sentence-transformers not installed. "
+                "Run: pip install sentence-transformers"
+            ) from e
+        _LOCAL_MODEL = SentenceTransformer("BAAI/bge-small-en-v1.5")
+        logger.info("EmbedService: loaded local BGE model (cached process-wide)")
+    return _LOCAL_MODEL
+
 
 class EmbedService:
     """
@@ -65,25 +85,12 @@ class EmbedService:
         return [item.embedding for item in response.data]
 
     async def _embed_local(self, texts: list[str]) -> list[list[float]]:
-        """Embed using local BGE model via sentence-transformers."""
-        if self._local_model is None:
-            # Lazy load to avoid import error if sentence-transformers not installed
-            try:
-                from sentence_transformers import SentenceTransformer
-                self._local_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
-                logger.info("EmbedService: loaded local BGE model")
-            except ImportError:
-                raise RuntimeError(
-                    "sentence-transformers not installed. "
-                    "Run: pip install sentence-transformers"
-                )
-
-        # Run in executor to avoid blocking the async event loop
+        """Embed using the cached local BGE model via sentence-transformers."""
+        model = _load_local_model()
+        # Run in executor to avoid blocking the async event loop.
         loop = asyncio.get_event_loop()
         embeddings = await loop.run_in_executor(
             None,
-            lambda: self._local_model.encode(
-                texts, normalize_embeddings=True
-            ).tolist()
+            lambda: model.encode(texts, normalize_embeddings=True).tolist(),
         )
         return embeddings
