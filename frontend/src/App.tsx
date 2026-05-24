@@ -525,7 +525,7 @@ export default function App() {
         <div className="flex items-center gap-4">
           {health ? (
             <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-full text-xs font-semibold text-primary">
-              <span className="w-2 h-2 rounded-full bg-primary pulse-glow-dot inline-block"></span>
+              <span className="w-2 h-2 rounded-full bg-primary status-dot inline-block"></span>
               API: ONLINE
             </div>
           ) : (
@@ -544,48 +544,35 @@ export default function App() {
       </header>
 
       {/* Tabs */}
-      <div className="bg-surface border-b border-border-subtle flex px-6">
-        <button
-          onClick={() => setActiveTab('search')}
-          className={`px-5 py-3.5 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'search'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-text-muted hover:text-on-surface'
-          }`}
-        >
-          🔍 Search playground
-        </button>
-        <button
-          onClick={() => setActiveTab('keys')}
-          className={`px-5 py-3.5 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'keys'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-text-muted hover:text-on-surface'
-          }`}
-        >
-          🔑 API Key registry
-        </button>
-        <button
-          onClick={() => setActiveTab('billing')}
-          className={`px-5 py-3.5 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'billing'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-text-muted hover:text-on-surface'
-          }`}
-        >
-          💳 Billing & limits
-        </button>
-        <button
-          onClick={() => setActiveTab('insights')}
-          className={`px-5 py-3.5 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'insights'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-text-muted hover:text-on-surface'
-          }`}
-        >
-          📊 Feedback insights
-        </button>
-      </div>
+      <nav className="bg-surface border-b border-border-subtle px-6">
+        <div className="flex tab-underline-container">
+          {[
+            { id: 'search', label: '🔍 Search playground' },
+            { id: 'keys', label: '🔑 API Key registry' },
+            { id: 'billing', label: '💳 Billing & limits' },
+            { id: 'insights', label: '📊 Feedback insights' }
+          ].map((tab, index, arr) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex-1 px-5 py-3.5 text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? 'text-primary'
+                  : 'text-text-muted hover:text-on-surface'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+          <span
+            className="tab-underline"
+            style={{
+              width: `${100 / 4}%`,
+              left: `${(['search', 'keys', 'billing', 'insights'].indexOf(activeTab) * 100) / 4}%`,
+            }}
+          />
+        </div>
+      </nav>
 
       {/* Main Grid Workspace */}
       <main className="flex-grow p-6">
@@ -628,12 +615,12 @@ export default function App() {
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder="Ask anything... (e.g. how does pgvector work)"
-                      className="flex-grow bg-surface-container-lowest border border-border-subtle focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-2.5 text-sm text-on-surface placeholder-text-muted outline-none transition-colors"
+                      className="flex-grow bg-surface-container-lowest border border-border-subtle focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-2.5 text-sm text-on-surface placeholder-text-muted outline-none transition-colors input-glow"
                     />
                     <button
                       type="submit"
                       disabled={searching}
-                      className="px-6 py-2.5 bg-primary text-on-primary font-semibold text-sm rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity whitespace-nowrap shadow-sm"
+                      className="px-6 py-2.5 bg-primary text-on-primary font-semibold text-sm rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity whitespace-nowrap shadow-sm btn-primary"
                     >
                       {searching ? 'Running...' : 'Execute'}
                     </button>
@@ -687,7 +674,7 @@ export default function App() {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    {searching && <span className="w-1.5 h-1.5 rounded-full bg-primary pulse-glow-dot"></span>}
+                    {searching && <span className="w-1.5 h-1.5 rounded-full bg-primary status-dot"></span>}
                     <span>{searchStatus.text}</span>
                   </div>
                   {query && (
@@ -710,7 +697,7 @@ export default function App() {
                   searchResults.results.map((res) => (
                     <div
                       key={res.rank}
-                      className="bg-surface border border-border-subtle rounded-xl p-5 hover:border-primary/40 transition-colors"
+                      className="bg-surface border border-border-subtle rounded-xl p-5 hover:border-primary/40 transition-colors card-lift card-inner-glow gradient-border-flow-hover"
                     >
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <div className="flex items-center gap-2">
@@ -773,7 +760,7 @@ export default function App() {
                   semanticResults.chunks.map((chunk, idx) => (
                     <div
                       key={idx}
-                      className="bg-surface border border-border-subtle rounded-xl p-5 hover:border-primary/40 transition-colors"
+                      className="bg-surface border border-border-subtle rounded-xl p-5 hover:border-primary/40 transition-colors card-lift card-inner-glow gradient-border-flow-hover"
                     >
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <div className="flex items-center gap-2">
@@ -833,7 +820,7 @@ export default function App() {
             {/* Sidebar widgets */}
             <div className="space-y-6">
               {/* System Health Detailed Component */}
-              <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm">
+              <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm card-lift card-inner-glow">
                 <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">System components</h3>
                 <div className="divide-y divide-border-subtle">
                   {health && health.components ? (
@@ -878,7 +865,7 @@ export default function App() {
               </div>
 
               {/* History list */}
-              <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm">
+              <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm card-lift card-inner-glow">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">Search history</h3>
                   {history.length > 0 && (
@@ -923,7 +910,7 @@ export default function App() {
         {activeTab === 'keys' && (
           <div className="max-w-4xl mx-auto space-y-6">
             {/* Create API Key Pane */}
-            <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm">
+            <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm card-lift card-inner-glow">
               <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Request an API Key</h3>
               <p className="text-xs text-text-muted mb-4">
                 Register with your email to obtain your free development API key instantly.
@@ -938,7 +925,7 @@ export default function App() {
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full bg-surface-container-lowest border border-border-subtle focus:border-primary rounded-lg px-3.5 py-2 text-xs text-on-surface outline-none"
+                    className="w-full bg-surface-container-lowest border border-border-subtle focus:border-primary rounded-lg px-3.5 py-2 text-xs text-on-surface outline-none input-glow"
                   />
                 </div>
                 <div className="flex-grow min-w-[200px]">
@@ -948,13 +935,13 @@ export default function App() {
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     placeholder="e.g. agent-retrieval"
-                    className="w-full bg-surface-container-lowest border border-border-subtle focus:border-primary rounded-lg px-3.5 py-2 text-xs text-on-surface outline-none"
+                    className="w-full bg-surface-container-lowest border border-border-subtle focus:border-primary rounded-lg px-3.5 py-2 text-xs text-on-surface outline-none input-glow"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={registering}
-                  className="px-5 py-2 bg-primary text-on-primary font-semibold text-xs rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  className="px-5 py-2 bg-primary text-on-primary font-semibold text-xs rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity btn-primary"
                 >
                   {registering ? 'Generating...' : 'Get Free Key'}
                 </button>
@@ -986,7 +973,7 @@ export default function App() {
             </div>
 
             {/* Key list table */}
-            <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm">
+            <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm card-lift card-inner-glow">
               <div className="flex items-center justify-between mb-4 border-b border-border-subtle pb-3">
                 <div>
                   <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">Active Keys</h3>
@@ -998,7 +985,7 @@ export default function App() {
                     value={mgmtKey}
                     onChange={(e) => setMgmtKey(e.target.value)}
                     placeholder="Enter X-API-Key to view registry"
-                    className="bg-surface-container-lowest border border-border-subtle focus:border-primary rounded-lg px-3 py-1.5 text-xs text-on-surface outline-none w-64"
+                    className="bg-surface-container-lowest border border-border-subtle focus:border-primary rounded-lg px-3 py-1.5 text-xs text-on-surface outline-none w-64 input-glow"
                   />
                   <button
                     onClick={loadKeys}
@@ -1079,7 +1066,7 @@ export default function App() {
         {activeTab === 'billing' && (
           <div className="max-w-4xl mx-auto space-y-6">
             {/* Current Plan Summary */}
-            <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm">
+            <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm card-lift card-inner-glow">
               <div className="flex items-center justify-between mb-4 border-b border-border-subtle pb-3">
                 <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">Current Account Plan</h3>
                 {mgmtKey ? (
@@ -1162,7 +1149,7 @@ export default function App() {
                   return (
                     <div
                       key={p.plan}
-                      className={`bg-surface border rounded-xl p-5 flex flex-col justify-between transition-colors ${
+                      className={`bg-surface border rounded-xl p-5 flex flex-col justify-between transition-colors card-lift card-inner-glow ${
                         isCurrent ? 'border-primary shadow-sm shadow-primary/15' : 'border-border-subtle'
                       }`}
                     >
@@ -1185,7 +1172,7 @@ export default function App() {
                       {p.plan !== 'free' && !isCurrent && (
                         <button
                           onClick={() => startCheckout(p.plan)}
-                          className="w-full py-2 bg-primary text-on-primary font-bold text-xs rounded-lg hover:opacity-90 transition-opacity"
+                          className="w-full py-2 bg-primary text-on-primary font-bold text-xs rounded-lg hover:opacity-90 transition-opacity btn-primary"
                         >
                           Upgrade →
                         </button>
@@ -1199,7 +1186,7 @@ export default function App() {
         )}
         {activeTab === 'insights' && (
           <div className="max-w-4xl mx-auto space-y-6">
-            <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm">
+            <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm card-lift card-inner-glow">
               <div className="flex items-center justify-between mb-4 border-b border-border-subtle pb-3">
                 <div>
                   <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">

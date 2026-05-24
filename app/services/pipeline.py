@@ -6,7 +6,7 @@ one failing step took down the whole request with no traceability
 (COMPARISON_README §2, §7). `SearchPipeline` replaces that with explicit,
 isolated stages:
 
-    search → fetch → clean → chunk → rank → store → graph
+    search → fetch → clean → chunk → rank → store → embed → graph
 
 Each stage runs inside a trace span that records its status (success / failed /
 fallback / skipped) and duration. Critical stages (search, fetch) raise on
@@ -270,21 +270,55 @@ class SearchPipeline:
                     results=final_results, processing_ms=elapsed_ms,
                 )
                 span["detail"] = f"query_id={query_id}"
+        # Expose the stored query id so clients can attach answer-level feedback.
+        response.query_id = query_id
 
-        # --- STAGE: graph (non-fatal, optional) ---------------------------
-        with self._stage("graph") as span:
-            if skip_store:
+        # --- STAGE: embed (non-fatal) -------------------------------------
+        # Vectorise the chunks we just stored. Doing this inline (instead of
+        # waiting for a manual /search/embed-and-store backfill) is what lets
+        # the knowledge graph grow on every single search.
+        embedded = 0
+        with self._stage("embed") as span:
+            if skip_store or not query_id:
                 span["status"] = "skipped"
-                span["detail"] = "skipped by request"
-            elif settings.enable_knowledge_graph and query_id:
-                created = await GraphService(self.db).build_edges()
-                span["detail"] = f"{created} edge(s)"
-                if not created:
-                    span["status"] = "skipped"
-                    span["detail"] = "no embeddings yet — run /search/embed-and-store"
+                span["detail"] = "nothing stored to embed"
+            elif not settings.enable_knowledge_graph:
+                span["status"] = "skipped"
+                span["detail"] = "knowledge graph disabled"
             else:
+                embedded = await self._embed_query_chunks(query_id)
+                span["detail"] = f"{embedded} new chunk(s) vectorised"
+                if not embedded:
+                    span["status"] = "skipped"
+                    span["detail"] = (
+                        "no embeddings produced — install sentence-transformers "
+                        "or set OPENAI_API_KEY"
+                    )
+
+        # Persist everything stored + embedded so far. The graph step below
+        # commits independently and could otherwise roll this work back.
+        try:
+            await self.db.commit()
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Pipeline: pre-graph commit failed: %s", e)
+
+        # --- STAGE: graph (non-fatal) -------------------------------------
+        # Build semantic-similarity edges between chunks. Runs on every search
+        # so the graph continuously expands and links new content to old.
+        with self._stage("graph") as span:
+            if skip_store or not query_id:
                 span["status"] = "skipped"
-                span["detail"] = "knowledge graph disabled or query not stored"
+                span["detail"] = "nothing stored to link"
+            elif not settings.enable_knowledge_graph:
+                span["status"] = "skipped"
+                span["detail"] = "knowledge graph disabled"
+            else:
+                created = await GraphService(self.db).build_edges()
+                total = await self._graph_edge_count()
+                span["detail"] = f"+{created} edge(s), {total} total"
+                if total == 0 and not embedded:
+                    span["status"] = "skipped"
+                    span["detail"] = "no chunk embeddings available yet"
 
         # --- persist traces + cache --------------------------------------
         await self._persist_traces(query_id)
@@ -318,3 +352,64 @@ class SearchPipeline:
             await self.db.flush()
         except Exception as e:  # noqa: BLE001
             logger.warning("Pipeline: failed to persist agent_traces: %s", e)
+
+    # ----------------------------------------------------- graph helpers
+
+    async def _embed_query_chunks(self, query_id: str) -> int:
+        """
+        Generate and persist embeddings for every chunk of `query_id` that
+        does not have one yet. Best-effort — returns the count embedded.
+        """
+        from sqlalchemy import text as _text
+        from app.services.embed_service import EmbedService
+
+        rows = (
+            await self.db.execute(
+                _text(
+                    """
+                    SELECT c.id, c.text
+                    FROM chunks c
+                    JOIN results r ON c.result_id = r.id
+                    WHERE r.query_id = :qid AND c.embedding IS NULL
+                    LIMIT 500
+                    """
+                ),
+                {"qid": query_id},
+            )
+        ).fetchall()
+        if not rows:
+            return 0
+
+        embed_service = EmbedService()
+        processed = 0
+        batch = 50
+        for i in range(0, len(rows), batch):
+            window = rows[i:i + batch]
+            embeddings = await embed_service.embed_texts([r.text for r in window])
+            if not embeddings:
+                continue
+            for row, emb in zip(window, embeddings):
+                vec = "[" + ",".join(map(str, emb)) + "]"
+                await self.db.execute(
+                    _text(
+                        "UPDATE chunks SET embedding = CAST(:emb AS vector) "
+                        "WHERE id = :id"
+                    ),
+                    {"emb": vec, "id": row.id},
+                )
+                processed += 1
+        await self.db.flush()
+        return processed
+
+    async def _graph_edge_count(self) -> int:
+        """Total chunk_edges currently in the knowledge graph (best-effort)."""
+        try:
+            from sqlalchemy import text as _text
+            row = (
+                await self.db.execute(
+                    _text("SELECT COUNT(*) AS n FROM chunk_edges")
+                )
+            ).first()
+            return int(row.n) if row else 0
+        except Exception:  # noqa: BLE001
+            return 0

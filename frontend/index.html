@@ -1,13 +1,1296 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>web</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula Nexus | Immersive Digital Experiences</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow-x: hidden;
+            font-family: 'Poppins', sans-serif;
+            background-color: #0a0a12;
+            color: #f1f1f3;
+        }
+        
+        .tech-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .hero-section {
+            height: 100vh;
+            position: relative;
+        }
+        
+        .particle-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(90deg, #00f0ff, #5773ff, #ff007a);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .gradient-border {
+            position: relative;
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            z-index: -1;
+            background: linear-gradient(90deg, #00f0ff, #5773ff, #ff007a);
+            border-radius: inherit;
+            padding: 2px;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        .floating {
+            animation: floating 8s ease-in-out infinite;
+        }
+        
+        .floating-2 {
+            animation: floating 6s ease-in-out infinite 2s;
+        }
+        
+        .floating-3 {
+            animation: floating 7s ease-in-out infinite 1s;
+        }
+        
+        @keyframes floating {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        
+        .holographic {
+            background: linear-gradient(135deg, rgba(0,240,255,0.1) 0%, rgba(87,115,255,0.1) 50%, rgba(255,0,122,0.1) 100%);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .neon-glow {
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 240, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 240, 255, 0); }
+        }
+        
+        .rotate-x {
+            animation: rotate-x 20s infinite linear;
+            transform-style: preserve-3d;
+        }
+        
+        @keyframes rotate-x {
+            0% { transform: rotateX(0deg); }
+            100% { transform: rotateX(360deg); }
+        }
+        
+        .space-helmet {
+            perspective: 1000px;
+        }
+        
+        .helmet-visor {
+            background: linear-gradient(45deg, rgba(0,240,255,0.2), rgba(87,115,255,0.4));
+            box-shadow: inset 0 0 50px rgba(0,240,255,0.5);
+            border-radius: 50%;
+            filter: blur(0.5px);
+        }
+        
+        .nav-link {
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, #00f0ff, #5773ff, #ff007a);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        .scroll-down {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0) translateX(-50%);
+            }
+            40% {
+                transform: translateY(-20px) translateX(-50%);
+            }
+            60% {
+                transform: translateY(-10px) translateX(-50%);
+            }
+        }
+        
+        .feature-panel {
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.6s ease-out;
+        }
+        
+        .feature-panel.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .hologram-effect {
+            position: relative;
+        }
+        
+        .hologram-effect::before {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(to bottom, rgba(0,240,255,0.3), transparent);
+            transform: perspective(500px) rotateX(60deg) scaleY(0.8);
+            filter: blur(15px);
+            z-index: -1;
+        }
+        
+        .scanline {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .scanline::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                transparent 0%,
+                rgba(0, 240, 255, 0.03) 50%,
+                transparent 100%
+            );
+            animation: scanline 5s linear infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        
+        /* Floating 3D Shapes */
+        .floating-cube {
+            animation: floating 8s ease-in-out infinite, rotate-x 20s infinite linear;
+            transform-style: preserve-3d;
+        }
+        
+        .floating-pyramid {
+            animation: floating 7s ease-in-out infinite 1s, rotate-y 25s infinite linear reverse;
+            transform-style: preserve-3d;
+        }
+        
+        .floating-torus {
+            animation: floating 9s ease-in-out infinite 2s, rotate-x 30s infinite linear reverse;
+            transform-style: preserve-3d;
+        }
+        
+        @keyframes rotate-y {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+        
+        .noise::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Animation -->
+    <div id="vanta-bg" class="particle-bg"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-black bg-opacity-60 backdrop-filter backdrop-blur-lg border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <span class="text-2xl font-bold gradient-text tech-font">NEBULA NEXUS</span>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-center space-x-8">
+                        <a href="#" class="nav-link px-3 py-2 text-sm font-medium">Home</a>
+                        <a href="#features" class="nav-link px-3 py-2 text-sm font-medium">Tech</a>
+                        <a href="#portfolio" class="nav-link px-3 py-2 text-sm font-medium">Work</a>
+                        <a href="#pricing" class="nav-link px-3 py-2 text-sm font-medium">Plans</a>
+                        <a href="#contact" class="nav-link px-3 py-2 text-sm font-medium">Contact</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button class="relative overflow-hidden group bg-transparent border-2 border-blue-400 hover:border-purple-500 text-white px-6 py-2 rounded-full font-medium transition-all duration-500">
+                        <span class="relative z-10">Launch App</span>
+                        <span class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 opacity-0 group-hover:opacity-100 transition-all duration-500"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section with 3D Model -->
+    <section class="hero-section flex items-center justify-center relative overflow-hidden px-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="text-center lg:text-left">
+                <div class="relative inline-block mb-8">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-600 rounded-xl blur opacity-75"></div>
+                    <span class="relative px-4 py-2 bg-black rounded-lg text-sm font-medium tech-font">
+                        FUTURE OF DIGITAL EXPERIENCE
+                    </span>
+                </div>
+                <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tech-font">
+                    <span class="gradient-text">Beyond Reality</span> Digital Frontiers
+                </h1>
+                <p class="text-xl text-gray-300 max-w-2xl mb-10">
+                    We blend cutting-edge technology with immersive design to create experiences that transcend traditional boundaries.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                    <button class="relative overflow-hidden group px-8 py-4 rounded-full font-medium text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105">
+                        <span class="relative z-10">Explore Demos</span>
+                        <span class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-all duration-500"></span>
+                    </button>
+                    <button class="px-8 py-4 rounded-full font-medium text-lg border-2 border-blue-400 hover:border-purple-500 text-white hover:text-blue-200 transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-play mr-2"></i> Watch Showreel
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 3D Holographic Display -->
+            <div class="relative flex items-center justify-center h-96 lg:h-auto">
+                <div class="absolute w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96">
+                    <div class="floating-torus h-full w-full">
+                        <!-- Three.js will render here -->
+                        <canvas id="torusCanvas" class="h-full w-full"></canvas>
+                    </div>
+                </div>
+                
+                <div class="holographic h-64 w-64 md:h-80 md:w-80 lg:h-96 lg:w-96 rounded-full opacity-90 relative">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="helmet-visor h-3/4 w-3/4 flex items-center justify-center">
+                            <div class="text-center p-6">
+                                <h3 class="text-2xl font-bold mb-2 gradient-text tech-font">NEBULA NEXUS</h3>
+                                <p class="text-xs text-gray-300">IMMERSIVE TECH</p>
+                                <div class="mt-4 h-1 w-16 mx-auto bg-gradient-to-r from-blue-400 to-purple-600"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-1/2 h-2 bg-blue-400 rounded-full blur-md opacity-60"></div>
+                </div>
+                
+                <!-- Floating 3D Shapes -->
+                <div class="absolute -left-10 top-1/4 w-16 h-16">
+                    <div class="floating-cube h-full w-full">
+                        <canvas id="cubeCanvas" class="h-full w-full"></canvas>
+                    </div>
+                </div>
+                
+                <div class="absolute -right-10 bottom-1/3 w-20 h-20">
+                    <div class="floating-pyramid h-full w-full">
+                        <canvas id="pyramidCanvas" class="h-full w-full"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Scroll Down Indicator -->
+            <div class="scroll-down lg:hidden">
+                <a href="#features" class="text-blue-400 hover:text-purple-400 transition-colors duration-300">
+                    <i class="fas fa-chevron-down text-2xl"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Tech Features Section -->
+    <section id="features" class="py-20 relative overflow-hidden px-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4 tech-font">
+                    <span class="gradient-text">Technological</span> Capabilities
+                </h2>
+                <p class="text-xl text-gray-300 max-w-4xl mx-auto">
+                    Leveraging the latest advancements to create immersive experiences that engage and captivate.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-panel holographic p-8 rounded-2xl transition-all duration-700 hover:transform hover:scale-105">
+                    <div class="relative">
+                        <div class="absolute -left-2 -top-2 w-12 h-12 bg-blue-500 rounded-full opacity-20 blur-sm"></div>
+                        <div class="relative flex items-center">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-vr-cardboard text-xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold gradient-text tech-font">XR Integration</h3>
+                        </div>
+                    </div>
+                    <p class="text-gray-300 mt-6 mb-6">
+                        Seamless mixed reality experiences combining VR, AR, and spatial computing for unparalleled immersion.
+                    </p>
+                    <div class="relative h-40 mt-6 rounded-xl overflow-hidden">
+                        <canvas id="xrCanvas" class="w-full h-full bg-black/30"></canvas>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-20 h-20 border-2 border-blue-400/50 rounded-full animate-ping opacity-30"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="feature-panel holographic p-8 rounded-2xl transition-all duration-700 delay-100 hover:transform hover:scale-105">
+                    <div class="relative">
+                        <div class="absolute -left-2 -top-2 w-12 h-12 bg-purple-500 rounded-full opacity-20 blur-sm"></div>
+                        <div class="relative flex items-center">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-brain text-xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold gradient-text tech-font">AI Interaction</h3>
+                        </div>
+                    </div>
+                    <p class="text-gray-300 mt-6 mb-6">
+                        Smart adaptive interfaces powered by machine learning that evolve with user behavior and preferences.
+                    </p>
+                    <div class="relative h-40 mt-6 rounded-xl overflow-hidden">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center pulse">
+                                <i class="fas fa-atom text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="absolute inset-0">
+                            <div class="grid grid-cols-5 grid-rows-5 h-full w-full">
+                                <!-- Grid for neural network effect -->
+                                <?php for($i=0; $i<25; $i++): ?>
+                                <div class="border border-gray-700 relative">
+                                    <div class="absolute inset-0 bg-blue-500/10 animate-pulse" style="animation-delay: <?= $i*0.1 ?>s; opacity: 0;"></div>
+                                </div>
+                                <?php endfor; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="feature-panel holographic p-8 rounded-2xl transition-all duration-700 delay-200 hover:transform hover:scale-105">
+                    <div class="relative">
+                        <div class="absolute -left-2 -top-2 w-12 h-12 bg-pink-500 rounded-full opacity-20 blur-sm"></div>
+                        <div class="relative flex items-center">
+                            <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-blue-600 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-project-diagram text-xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold gradient-text tech-font">Blockchain Ready</h3>
+                        </div>
+                    </div>
+                    <p class="text-gray-300 mt-6 mb-6">
+                        Decentralized architectures and NFT integration for ownership, authentication, and new economic models.
+                    </p>
+                    <div class="relative h-40 mt-6 rounded-xl overflow-hidden">
+                        <div class="absolute inset-0">
+                            <div class="grid grid-cols-6 gap-1 h-full w-full p-1">
+                                <!-- Blockchain blocks animation -->
+                                <?php for($i=0; $i<36; $i++): ?>
+                                <div class="bg-gray-800/50 border border-gray-700 rounded-sm animate-pulse" style="animation-delay: <?= $i*0.05 ?>s;"></div>
+                                <?php endfor; ?>
+                            </div>
+                        </div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-16 h-16 rotate-x">
+                                <div class="w-full h-full bg-gradient-to-br from-blue-600 to-pink-500 flex items-center justify-center">
+                                    <i class="fas fa-cube text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 3D Showcase Section -->
+    <section id="portfolio" class="py-20 relative overflow-hidden px-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4 tech-font">
+                    <span class="gradient-text">Immersive</span> Showcase
+                </h2>
+                <p class="text-xl text-gray-300 max-w-4xl mx-auto">
+                    Our portfolio of cutting-edge projects that push the boundaries of digital interaction.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Project 1 -->
+                <div class="feature-panel holographic rounded-2xl overflow-hidden transition-all duration-700 delay-75 hover:transform hover:scale-105">
+                    <div class="relative h-64">
+                        <canvas id="project1Canvas" class="absolute inset-0 w-full h-full bg-gray-900"></canvas>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+                        <div class="absolute bottom-0 left-0 p-6">
+                            <h3 class="text-2xl font-bold mb-1">Quantum Interface</h3>
+                            <span class="text-sm text-blue-400">VR Control System</span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-gray-300 mb-4">A revolutionary interface system using quantum computing principles for intuitive interactions.</p>
+                        <button class="text-blue-400 font-medium flex items-center group">
+                            <span>Explore Project</span>
+                            <i class="fas fa-arrow-right ml-2 group-hover:ml-3 transition-all duration-300"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Project 2 -->
+                <div class="feature-panel holographic rounded-2xl overflow-hidden transition-all duration-700 delay-150 hover:transform hover:scale-105">
+                    <div class="relative h-64">
+                        <canvas id="project2Canvas" class="absolute inset-0 w-full h-full bg-gray-900"></canvas>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+                        <div class="absolute bottom-0 left-0 p-6">
+                            <h3 class="text-2xl font-bold mb-1">Neon Metaverse</h3>
+                            <span class="text-sm text-purple-400">Digital Cityscape</span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-gray-300 mb-4">A cyberpunk-inspired virtual world with blockchain-based property ownership.</p>
+                        <button class="text-purple-400 font-medium flex items-center group">
+                            <span>Explore Project</span>
+                            <i class="fas fa-arrow-right ml-2 group-hover:ml-3 transition-all duration-300"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Project 3 -->
+                <div class="feature-panel holographic rounded-2xl overflow-hidden transition-all duration-700 delay-300 hover:transform hover:scale-105">
+                    <div class="relative h-64">
+                        <canvas id="project3Canvas" class="absolute inset-0 w-full h-full bg-gray-900"></canvas>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+                        <div class="absolute bottom-0 left-0 p-6">
+                            <h3 class="text-2xl font-bold mb-1">Holo Nexus</h3>
+                            <span class="text-sm text-pink-400">AR Collaboration</span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-gray-300 mb-4">Mixed reality workspace enabling global teams to collaborate in 3D space.</p>
+                        <button class="text-pink-400 font-medium flex items-center group">
+                            <span>Explore Project</span>
+                            <i class="fas fa-arrow-right ml-2 group-hover:ml-3 transition-all duration-300"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-12">
+                <button class="relative overflow-hidden group px-8 py-4 rounded-full font-medium text-lg bg-transparent border-2 border-blue-400 hover:border-purple-500 text-white transition-all duration-300 transform hover:scale-105">
+                    <span class="relative z-10">View All Projects</span>
+                    <span class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 opacity-0 group-hover:opacity-100 transition-all duration-500"></span>
+                </button>
+            </div>
+            
+            <!-- 3D Tech Visualization -->
+            <div class="mt-20 relative h-96 rounded-3xl overflow-hidden hologram-effect scanline noise">
+                <canvas id="techVizCanvas" class="absolute inset-0 w-full h-full"></canvas>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="text-center p-8 max-w-2xl">
+                        <h3 class="text-3xl md:text-4xl font-bold mb-4 gradient-text tech-font">Tech Spectrum Analysis</h3>
+                        <p class="text-gray-300 mb-6">Real-time visualization of our technology stack and capabilities across multiple dimensions.</p>
+                        <div class="flex justify-center gap-4">
+                            <button class="px-6 py-2 rounded-full text-sm font-medium bg-blue-500/20 border border-blue-400/50 hover:bg-blue-500/30">XR</button>
+                            <button class="px-6 py-2 rounded-full text-sm font-medium bg-purple-500/20 border border-purple-400/50 hover:bg-purple-500/30">AI</button>
+                            <button class="px-6 py-2 rounded-full text-sm font-medium bg-pink-500/20 border border-pink-400/50 hover:bg-pink-500/30">Blockchain</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 3D Performance Stats -->
+    <section class="py-20 relative overflow-hidden px-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="holographic rounded-3xl p-8 md:p-12 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-3xl md:text-5xl font-bold mb-6 tech-font">
+                        <span class="gradient-text">Performance</span> Metrics
+                    </h2>
+                    <p class="text-xl text-gray-300 mb-8">
+                        Our solutions deliver measurable results across all key performance indicators.
+                    </p>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <div class="text-4xl font-bold gradient-text mb-2 tech-font">300%</div>
+                            <p class="text-gray-400">User Engagement</p>
+                        </div>
+                        <div>
+                            <div class="text-4xl font-bold gradient-text mb-2 tech-font">1.2s</div>
+                            <p class="text-gray-400">Avg. Load Time</p>
+                        </div>
+                        <div>
+                            <div class="text-4xl font-bold gradient-text mb-2 tech-font">99.9%</div>
+                            <p class="text-gray-400">Uptime</p>
+                        </div>
+                        <div>
+                            <div class="text-4xl font-bold gradient-text mb-2 tech-font">4.8/5</div>
+                            <p class="text-gray-400">Client Satisfaction</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="h-64 md:h-96 relative">
+                    <canvas id="statsCanvas" class="absolute inset-0 w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Contact Section with 3D Form -->
+    <section id="contact" class="py-20 relative overflow-hidden px-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4 tech-font">
+                    <span class="gradient-text">Ready to</span> Transform?
+                </h2>
+                <p class="text-xl text-gray-300 max-w-4xl mx-auto">
+                    Let's discuss how we can create something extraordinary together.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div class="holographic rounded-3xl p-8 md:p-12 relative overflow-hidden">
+                    <form class="space-y-6 relative z-10">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-300 mb-2">Your Name</label>
+                            <input type="text" id="name" class="w-full px-5 py-3 bg-gray-900 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter your name">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                            <input type="email" id="email" class="w-full px-5 py-3 bg-gray-900 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="your@email.com">
+                        </div>
+                        <div>
+                            <label for="project" class="block text-sm font-medium text-gray-300 mb-2">Project Type</label>
+                            <select id="project" class="w-full px-5 py-3 bg-gray-900 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option>Select project type</option>
+                                <option>XR Experience</option>
+                                <option>AI Integration</option>
+                                <option>Web3 Platform</option>
+                                <option>Custom Solution</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="message" class="block text-sm font-medium text-gray-300 mb-2">Project Details</label>
+                            <textarea id="message" rows="4" class="w-full px-5 py-3 bg-gray-900 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Tell us about your project..."></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-medium text-lg transition-all duration-300 transform hover:scale-105">
+                            Send Message
+                        </button>
+                    </form>
+                    <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+                    <div class="absolute -top-20 -left-20 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
+                </div>
+                
+                <div class="relative">
+                    <div class="h-full w-full rounded-3xl overflow-hidden">
+                        <canvas id="contactCanvas" class="h-full w-full bg-gray-900"></canvas>
+                    </div>
+                    <div class="absolute bottom-8 left-8 right-8 p-6 bg-black/70 backdrop-filter backdrop-blur-sm rounded-xl border border-gray-700">
+                        <h3 class="text-xl font-bold mb-2 gradient-text tech-font">Connect With Us</h3>
+                        <p class="text-gray-300 mb-4">We're available across all major platforms and networks.</p>
+                        <div class="flex space-x-4">
+                            <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-blue-400 rounded-full flex items-center justify-center transition-all duration-300">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-purple-400 rounded-full flex items-center justify-center transition-all duration-300">
+                                <i class="fab fa-discord"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-pink-400 rounded-full flex items-center justify-center transition-all duration-300">
+                                <i class="fab fa-linkedin"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-full flex items-center justify-center transition-all duration-300">
+                                <i class="fab fa-telegram"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="py-12 border-t border-gray-800 relative overflow-hidden px-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
+                <div>
+                    <h4 class="text-xl font-bold gradient-text tech-font mb-4">NEBULA NEXUS</h4>
+                    <p class="text-gray-400 mb-6">Pushing the boundaries of digital experience through immersive technology.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-purple-400 transition-colors duration-300">
+                            <i class="fab fa-discord"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-pink-400 transition-colors duration-300">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors duration-300">
+                            <i class="fab fa-telegram"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h5 class="text-lg font-bold text-white mb-4">Services</h5>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300">XR Development</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300">AI Integration</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300">Web3 Solutions</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300">Immersive Design</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300">Tech Consulting</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="text-lg font-bold text-white mb-4">Company</h5>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300">About Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300">Careers</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300">Case Studies</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300">Blog</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="text-lg font-bold text-white mb-4">Newsletter</h5>
+                    <p class="text-gray-400 mb-4">Subscribe to our newsletter for the latest updates and insights.</p>
+                    <form class="flex">
+                        <input type="email" placeholder="Your email" class="px-4 py-2 bg-gray-800 border border-gray-700 rounded-l-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent w-full">
+                        <button type="submit" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-r-lg transition-all duration-300">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-500 text-sm mb-4 md:mb-0">© 2023 Nebula Nexus. All rights reserved.</p>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-500 hover:text-blue-400 text-sm transition-colors duration-300">Privacy Policy</a>
+                    <a href="#" class="text-gray-500 hover:text-blue-400 text-sm transition-colors duration-300">Terms of Service</a>
+                    <a href="#" class="text-gray-500 hover:text-blue-400 text-sm transition-colors duration-300">Cookies</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Floating 3D Sphere -->
+        <div class="absolute -bottom-20 -right-20 w-40 h-40">
+            <canvas id="footerSphereCanvas" class="w-full h-full"></canvas>
+        </div>
+    </footer>
+    
+    <script>
+        // Initialize Vanta.js background
+        VANTA.GLOBE({
+            el: "#vanta-bg",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x5773ff,
+            backgroundColor: 0x0a0a12,
+            size: 0.8
+        });
+        
+        // Initialize Three.js 3D models
+        document.addEventListener('DOMContentLoaded', function() {
+            // Torus in Hero Section
+            const torusCanvas = document.getElementById('torusCanvas');
+            const torusScene = new THREE.Scene();
+            const torusCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            const torusRenderer = new THREE.WebGLRenderer({ 
+                canvas: torusCanvas, 
+                alpha: true,
+                antialias: true 
+            });
+            
+            const torusGeometry = new THREE.TorusGeometry(1, 0.4, 16, 100);
+            const torusMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x5773ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            const torus = new THREE.Mesh(torusGeometry, torusMaterial);
+            torusScene.add(torus);
+            
+            torusCamera.position.z = 3;
+            
+            // Cube in Hero Section
+            const cubeCanvas = document.getElementById('cubeCanvas');
+            const cubeScene = new THREE.Scene();
+            const cubeCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            const cubeRenderer = new THREE.WebGLRenderer({ 
+                canvas: cubeCanvas, 
+                alpha: true,
+                antialias: true 
+            });
+            
+            const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+            const cubeMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xff007a,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.6
+            });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cubeScene.add(cube);
+            
+            cubeCamera.position.z = 3;
+            
+            // Pyramid in Hero Section
+            const pyramidCanvas = document.getElementById('pyramidCanvas');
+            const pyramidScene = new THREE.Scene();
+            const pyramidCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            const pyramidRenderer = new THREE.WebGLRenderer({ 
+                canvas: pyramidCanvas, 
+                alpha: true,
+                antialias: true 
+            });
+            
+            const pyramidGeometry = new THREE.ConeGeometry(0.8, 1.5, 4);
+            const pyramidMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x00f0ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.6
+            });
+            const pyramid = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
+            pyramid.rotation.y = Math.PI / 4;
+            pyramidScene.add(pyramid);
+            
+            pyramidCamera.position.z = 3;
+            
+            // XR Canvas in Features
+            const xrCanvas = document.getElementById('xrCanvas');
+            const xrScene = new THREE.Scene();
+            const xrCamera = new THREE.PerspectiveCamera(75, 2, 0.1, 1000);
+            const xrRenderer = new THREE.WebGLRenderer({ 
+                canvas: xrCanvas, 
+                alpha: true,
+                antialias: true 
+            });
+            
+            const xrPointsGeometry = new THREE.BufferGeometry();
+            const xrVertices = [];
+            for (let i = 0; i < 1000; i++) {
+                xrVertices.push(
+                    Math.random() * 2 - 1,
+                    Math.random() * 2 - 1,
+                    Math.random() * 2 - 1
+                );
+            }
+            xrPointsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(xrVertices, 3));
+            const xrPointsMaterial = new THREE.PointsMaterial({
+                color: 0x5773ff,
+                size: 0.02,
+                transparent: true,
+                opacity: 0.8
+            });
+            const xrPoints = new THREE.Points(xrPointsGeometry, xrPointsMaterial);
+            xrScene.add(xrPoints);
+            
+            xrCamera.position.z = 2;
+            xrRenderer.setSize(xrCanvas.width, xrCanvas.height);
+            
+            // Project 1 Canvas
+            const project1Canvas = document.getElementById('project1Canvas');
+            const project1Scene = new THREE.Scene();
+            const project1Camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            const project1Renderer = new THREE.WebGLRenderer({ 
+                canvas: project1Canvas, 
+                alpha: true,
+                antialias: true 
+            });
+            
+            // Create a grid of points for project 1
+            const project1Geometry = new THREE.BufferGeometry();
+            const project1Vertices = [];
+            const gridSize = 10;
+            
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    project1Vertices.push(
+                        (i - gridSize/2) * 0.1,
+                        (j - gridSize/2) * 0.1,
+                        0
+                    );
+                }
+            }
+            
+            project1Geometry.setAttribute('position', new THREE.Float32BufferAttribute(project1Vertices, 3));
+            const project1Material = new THREE.PointsMaterial({
+                color: 0x00f0ff,
+                size: 0.05,
+                sizeAttenuation: true
+            });
+            const project1Points = new THREE.Points(project1Geometry, project1Material);
+            project1Scene.add(project1Points);
+            
+            project1Camera.position.z = 2;
+            project1Renderer.setSize(project1Canvas.width, project1Canvas.height);
+            
+            // Project 2 Canvas
+            const project2Canvas = document.getElementById('project2Canvas');
+            const project2Scene = new THREE.Scene();
+            const project2Camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            const project2Renderer = new THREE.WebGLRenderer({ 
+                canvas: project2Canvas, 
+                alpha: true,
+                antialias: true 
+            });
+            
+            // Create a wireframe city for project 2
+            const project2Group = new THREE.Group();
+            
+            for (let i = 0; i < 20; i++) {
+                const height = Math.random() * 0.5 + 0.2;
+                const buildingGeometry = new THREE.BoxGeometry(0.1, height, 0.1);
+                const buildingMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x8a2be2,
+                    wireframe: true
+                });
+                const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+                building.position.x = (Math.random() - 0.5) * 2;
+                building.position.z = (Math.random() - 0.5) * 2;
+                building.position.y = height / 2;
+                project2Group.add(building);
+            }
+            
+            project2Scene.add(project2Group);
+            project2Camera.position.z = 3;
+            project2Camera.position.y = 1;
+            project2Renderer.setSize(project2Canvas.width, project2Canvas.height);
+            
+            // Project 3 Canvas
+            const project3Canvas = document.getElementById('project3Canvas');
+            const project3Scene = new THREE.Scene();
+            const project3Camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            const project3Renderer = new THREE.WebGLRenderer({ 
+                canvas: project3Canvas, 
+                alpha: true,
+                antialias: true 
+            });
+            
+            // Create a network of lines for project 3
+            const project3Group = new THREE.Group();
+            const project3Material = new THREE.LineBasicMaterial({ color: 0xff007a });
+            
+            for (let i = 0; i < 20; i++) {
+                const project3Geometry = new THREE.BufferGeometry();
+                const vertices = [];
+                vertices.push(
+                    Math.random() * 2 - 1,
+                    Math.random() * 2 - 1,
+                    Math.random() * 2 - 1
+                );
+                vertices.push(
+                    Math.random() * 2 - 1,
+                    Math.random() * 2 - 1,
+                    Math.random() * 2 - 1
+                );
+                project3Geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                const line = new THREE.Line(project3Geometry, project3Material);
+                project3Group.add(line);
+            }
+            
+            project3Scene.add(project3Group);
+            project3Camera.position.z = 3;
+            project3Renderer.setSize(project3Canvas.width, project3Canvas.height);
+            
+            // Tech Viz Canvas
+            const techVizCanvas = document.getElementById('techVizCanvas');
+            const techVizScene = new THREE.Scene();
+            const techVizCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            const techVizRenderer = new THREE.WebGLRenderer({ 
+                canvas: techVizCanvas, 
+                alpha: true,
+                antialias: true 
+            });
+            techVizRenderer.setSize(techVizCanvas.width, techVizCanvas.height);
+            
+            // Create a particle system for tech viz
+            const techVizParticles = 500;
+            const techVizPositions = new Float32Array(techVizParticles * 3);
+            const techVizColors = new Float32Array(techVizParticles * 3);
+            
+            for (let i = 0; i < techVizParticles; i++) {
+                techVizPositions[i * 3] = (Math.random() - 0.5) * 10;
+                techVizPositions[i * 3 + 1] = (Math.random() - 0.5) * 10;
+                techVizPositions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+                
+                techVizColors[i * 3] = Math.random() * 0.5 + 0.5; // R
+                techVizColors[i * 3 + 1] = Math.random() * 0.3;    // G
+                techVizColors[i * 3 + 2] = Math.random() * 0.5 + 0.5; // B
+            }
+            
+            const techVizGeometry = new THREE.BufferGeometry();
+            techVizGeometry.setAttribute('position', new THREE.BufferAttribute(techVizPositions, 3));
+            techVizGeometry.setAttribute('color', new THREE.BufferAttribute(techVizColors, 3));
+            
+            const techVizMaterial = new THREE.PointsMaterial({
+                size: 0.1,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                sizeAttenuation: true
+            });
+            
+            const techVizParticleSystem = new THREE.Points(techVizGeometry, techVizMaterial);
+            techVizScene.add(techVizParticleSystem);
+            
+            techVizCamera.position.z = 5;
+            
+            // Stats Canvas
+            const statsCanvas = document.getElementById('statsCanvas');
+            const statsScene = new THREE.Scene();
+            const statsCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            const statsRenderer = new THREE.WebGLRenderer({ 
+                canvas: statsCanvas, 
+                alpha: true,
+                antialias: true 
+            });
+            statsRenderer.setSize(statsCanvas.width, statsCanvas.height);
+            
+            // Create data visualization
+            const statsGroup = new THREE.Group();
+            
+            // Create bars
+            const barHeights = [1.5, 2, 2.8, 1.8, 2.5];
+            const barColors = [0x00f0ff, 0x5773ff, 0xff007a, 0x8a2be2, 0x00ffaa];
+            
+            for (let i = 0; i < barHeights.length; i++) {
+                const barGeometry = new THREE.BoxGeometry(0.3, barHeights[i], 0.3);
+                const barMaterial = new THREE.MeshBasicMaterial({ color: barColors[i] });
+                const bar = new THREE.Mesh(barGeometry, barMaterial);
+                bar.position.x = (i - 2) * 0.8;
+                bar.position.y = barHeights[i] / 2;
+                statsGroup.add(bar);
+                
+                // Add connecting lines
+                if (i > 0) {
+                    const lineGeometry = new THREE.BufferGeometry();
+                    const lineVertices = [
+                        (i-1 - 2) * 0.8, barHeights[i-1], 0,
+                        (i - 2) * 0.8, barHeights[i], 0
+                    ];
+                    lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(lineVertices, 3));
+                    const lineMaterial = new THREE.LineBasicMaterial({
+                        color: 0xffffff,
+                        transparent: true,
+                        opacity: 0.4
+                    });
+                    const line = new THREE.Line(lineGeometry, lineMaterial);
+                    statsGroup.add(line);
+                }
+            }
+            
+            // Add base plane
+            const planeGeometry = new THREE.PlaneGeometry(5, 0.1);
+            const planeMaterial = new THREE.MeshBasicMaterial({
+                color: 0x444444,
+                side: THREE.DoubleSide
+            });
+            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            plane.rotation.x = Math.PI / 2;
+            plane.position.y = -0.05;
+            statsGroup.add(plane);
+            
+            statsScene.add(statsGroup);
+            statsCamera.position.z = 6;
+            statsCamera.position.y = 1;
+            statsCamera.lookAt(0, 1, 0);
+            
+            // Contact Canvas
+            const contactCanvas = document.getElementById('contactCanvas');
+            const contactScene = new THREE.Scene();
+            const contactCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            const contactRenderer = new THREE.WebGLRenderer({ 
+                canvas: contactCanvas, 
+                alpha: true,
+                antialias: true 
+            });
+            
+            // Create glowing orbs with connections
+            const contactOrbs = [];
+            const orbPositions = [];
+            const orbColors = [0x00f0ff, 0x5773ff, 0xff007a, 0x8a2be2, 0x00ffaa];
+            
+            for (let i = 0; i < 5; i++) {
+                const orbGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+                const orbMaterial = new THREE.MeshBasicMaterial({
+                    color: orbColors[i],
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const orb = new THREE.Mesh(orbGeometry, orbMaterial);
+                
+                orb.position.x = (Math.random() - 0.5) * 4;
+                orb.position.y = (Math.random() - 0.5) * 2;
+                orb.position.z = (Math.random() - 0.5) * 4;
+                
+                orbPositions.push(new THREE.Vector3(
+                    orb.position.x,
+                    orb.position.y,
+                    orb.position.z
+                ));
+                
+                contactOrbs.push(orb);
+                contactScene.add(orb);
+            }
+            
+            // Add connecting lines
+            const lineGeometry = new THREE.BufferGeometry();
+            const lineVertices = [];
+            
+            for (let i = 0; i < orbPositions.length; i++) {
+                for (let j = i + 1; j < orbPositions.length; j++) {
+                    lineVertices.push(
+                        orbPositions[i].x, orbPositions[i].y, orbPositions[i].z,
+                        orbPositions[j].x, orbPositions[j].y, orbPositions[j].z
+                    );
+                }
+            }
+            
+            lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(lineVertices, 3));
+            const lineMaterial = new THREE.LineBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.2
+            });
+            const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+            contactScene.add(lines);
+            
+            contactCamera.position.z = 8;
+            contactRenderer.setSize(contactCanvas.width, contactCanvas.height);
+            
+            // Footer Sphere
+            const footerSphereCanvas = document.getElementById('footerSphereCanvas');
+            const footerSphereScene = new THREE.Scene();
+            const footerSphereCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            const footerSphereRenderer = new THREE.WebGLRenderer({ 
+                canvas: footerSphereCanvas, 
+                alpha: true,
+                antialias: true 
+            });
+            
+            const footerSphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+            const footerSphereMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00f0ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.4
+            });
+            const footerSphere = new THREE.Mesh(footerSphereGeometry, footerSphereMaterial);
+            footerSphereScene.add(footerSphere);
+            
+            footerSphereCamera.position.z = 3;
+            
+            // Intersection Observer for animated elements
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, {
+                threshold: 0.1
+            });
+            
+            document.querySelectorAll('.feature-panel').forEach(panel => {
+                observer.observe(panel);
+            });
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                // Rotate torus
+                torus.rotation.x += 0.01;
+                torus.rotation.y += 0.01;
+                torusRenderer.render(torusScene, torusCamera);
+                
+                // Rotate cube (slower)
+                cube.rotation.x += 0.005;
+                cube.rotation.y += 0.005;
+                cubeRenderer.render(cubeScene, cubeCamera);
+                
+                // Rotate pyramid (different axis)
+                pyramid.rotation.x += 0.007;
+                pyramid.rotation.z += 0.007;
+                pyramidRenderer.render(pyramidScene, pyramidCamera);
+                
+                // Animate XR points
+                xrPoints.rotation.y += 0.005;
+                xrRenderer.render(xrScene, xrCamera);
+                
+                // Animate project 1 points
+                project1Points.rotation.y += 0.01;
+                const positions = project1Points.geometry.attributes.position;
+                for (let i = 2; i < positions.count * 3; i += 3) {
+                    positions.array[i] = Math.sin(Date.now() * 0.001 + i) * 0.5;
+                }
+                positions.needsUpdate = true;
+                project1Renderer.render(project1Scene, project1Camera);
+                
+                // Animate project 2 buildings
+                project2Group.rotation.y += 0.005;
+                project2Renderer.render(project2Scene, project2Camera);
+                
+                // Animate project 3 lines
+                project3Group.rotation.y += 0.008;
+                project3Renderer.render(project3Scene, project3Camera);
+                
+                // Animate tech viz particles
+                techVizParticleSystem.rotation.y += 0.003;
+                techVizRenderer.render(techVizScene, techVizCamera);
+                
+                // Animate stats bars
+                statsGroup.rotation.y += 0.002;
+                statsRenderer.render(statsScene, statsCamera);
+                
+                // Animate contact orbs
+                contactOrbs.forEach((orb, i) => {
+                    orb.position.y = Math.sin(Date.now() * 0.001 + i) * 0.3;
+                    orb.scale.setScalar(1 + Math.sin(Date.now() * 0.001 + i) * 0.2);
+                });
+                contactRenderer.render(contactScene, contactCamera);
+                
+                // Rotate footer sphere
+                footerSphere.rotation.y += 0.01;
+                footerSphereRenderer.render(footerSphereScene, footerSphereCamera);
+            }
+            
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                // Adjust canvas sizes and camera aspects
+                const canvases = [
+                    { canvas: torusCanvas, renderer: torusRenderer },
+                    { canvas: cubeCanvas, renderer: cubeRenderer },
+                    { canvas: pyramidCanvas, renderer: pyramidRenderer },
+                    { canvas: xrCanvas, renderer: xrRenderer },
+                    { canvas: project1Canvas, renderer: project1Renderer },
+                    { canvas: project2Canvas, renderer: project2Renderer },
+                    { canvas: project3Canvas, renderer: project3Renderer },
+                    { canvas: techVizCanvas, renderer: techVizRenderer },
+                    { canvas: statsCanvas, renderer: statsRenderer },
+                    { canvas: contactCanvas, renderer: contactRenderer },
+                    { canvas: footerSphereCanvas, renderer: footerSphereRenderer }
+                ];
+                
+                canvases.forEach(item => {
+                    // For the hero section floating elements
+                    if ([torusCanvas, cubeCanvas, pyramidCanvas].includes(item.canvas)) {
+                        const parent = item.canvas.parentElement;
+                        const width = parent.offsetWidth;
+                        const height = parent.offsetHeight;
+                        
+                        item.canvas.width = width;
+                        item.canvas.height = height;
+                        item.renderer.setSize(width, height);
+                        
+                        // Update camera for new aspect ratio
+                        const camera = item === torusCanvas ? torusCamera : 
+                                      item === cubeCanvas ? cubeCamera : pyramidCamera;
+                        
+                        camera.aspect = width / height;
+                        camera.updateProjectionMatrix();
+                    }
+                    
+                    // For other canvas elements with defined parents
+                    else if (item.canvas.parentElement) {
+                        const parent = item.canvas.parentElement;
+                        const width = parent.offsetWidth;
+                        const height = parent.offsetHeight;
+                        
+                        if (width > 0 && height > 0) {
+                            item.canvas.width = width;
+                            item.canvas.height = height;
+                            item.renderer.setSize(width, height);
+                            
+                            // Update camera for new aspect ratio
+                            let camera;
+                            if (item === xrCanvas) camera = xrCamera;
+                            else if (item === project1Canvas) camera = project1Camera;
+                            else if (item === project2Canvas) camera = project2Camera;
+                            else if (item === project3Canvas) camera = project3Camera;
+                            else if (item === techVizCanvas) camera = techVizCamera;
+                            else if (item === statsCanvas) camera = statsCamera;
+                            else if (item === contactCanvas) camera = contactCamera;
+                            else if (item === footerSphereCanvas) camera = footerSphereCamera;
+                            
+                            camera.aspect = width / height;
+                            camera.updateProjectionMatrix();
+                        }
+                    }
+                });
+            });
+            
+            // Trigger initial resize
+            window.dispatchEvent(new Event('resize'));
+        });
+    </script>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - <a href="https://enzostvs-deepsite.hf.space?remix=zaid3sa/zad" style="color: #fff;text-decoration: underline;" target="_blank" >🧬 Remix</a></p></body>
 </html>

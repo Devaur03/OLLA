@@ -79,6 +79,8 @@ class SearchResponse(BaseModel):
     answer: str = ""
     # Which local LLM produced the answer (empty if synthesis was skipped/failed).
     answer_model: str = ""
+    # UUID of the stored query record — required to attach answer-level feedback.
+    query_id: str | None = None
 
 
 class ComponentHealth(BaseModel):
