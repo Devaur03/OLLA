@@ -77,9 +77,31 @@ On top of the core pipeline OLLA adds **confidence-routed hybrid retrieval**
 
 ![OLLA Pipeline](docs/images/pipeline.png)
 
+```
+query
+  │
+  ▼  ┌── cache ──────────────────────────────────────────────┐
+     │  Redis hit? return immediately (< 50 ms)               │
+     └────────────────────────────────────────────────────────┘
+  │  (miss)
+  ▼
+search → fetch → clean → rank → answer → store → embed → graph
+  │        │       │       │       │       │       │       │
+  │        │       │       │       │       │       │       └─ link chunks by
+  │        │       │       │       │       │       │          similarity (graph)
+  │        │       │       │       │       │       └─ vectorise new chunks
+  │        │       │       │       │       └─ persist query + results + chunks
+  │        │       │       │       └─ local LLM writes a cited answer
+  │        │       │       └─ TF-IDF + density + source-trust ranking
+  │        │       └─ clean + sanitize + chunk
+  │        └─ Jina → direct → snippet fetch waterfall
+  └─ DuckDuckGo multi-backend search
+```
+
 `search` and `fetch` are **critical** — if they fail the request fails. The
 enrichment stages (`store`, `embed`, `graph`) are **non-fatal**: a failure there
 marks the response `degraded` but still returns results and an answer.
+
 
 ---
 
