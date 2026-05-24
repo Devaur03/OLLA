@@ -19,7 +19,7 @@ import uuid
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.request import FeedbackLevel, FeedbackRequest, FeedbackType
+from app.models.request import FeedbackRequest, FeedbackType
 from app.services.scoring_service import ScoringService
 from app.services.source_trust_service import SourceTrustService, domain_of
 

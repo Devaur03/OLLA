@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
-from app.models.db.workspace import Workspace, DEFAULT_WORKSPACE_ID
+from app.models.db.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/workspaces", tags=["workspaces"])
