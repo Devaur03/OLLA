@@ -75,26 +75,7 @@ On top of the core pipeline OLLA adds **confidence-routed hybrid retrieval**
 
 ## The Pipeline
 
-```
-query
-  │
-  ▼  ┌── cache ──────────────────────────────────────────────┐
-     │  Redis hit? return immediately (< 50 ms)               │
-     └────────────────────────────────────────────────────────┘
-  │  (miss)
-  ▼
-search → fetch → clean → rank → answer → store → embed → graph
-  │        │       │       │       │       │       │       │
-  │        │       │       │       │       │       │       └─ link chunks by
-  │        │       │       │       │       │       │          similarity (graph)
-  │        │       │       │       │       │       └─ vectorise new chunks
-  │        │       │       │       │       └─ persist query + results + chunks
-  │        │       │       │       └─ local LLM writes a cited answer
-  │        │       │       └─ TF-IDF + density + source-trust ranking
-  │        │       └─ clean + sanitize + chunk
-  │        └─ Jina → direct → snippet fetch waterfall
-  └─ DuckDuckGo multi-backend search
-```
+![OLLA Pipeline](docs/images/pipeline.png)
 
 `search` and `fetch` are **critical** — if they fail the request fails. The
 enrichment stages (`store`, `embed`, `graph`) are **non-fatal**: a failure there
@@ -104,32 +85,7 @@ marks the response `degraded` but still returns results and an answer.
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  CLIENTS:  OLLA CLI · Web console · curl / SDK · Claude (MCP) │
-└───────────────┬──────────────────────────────────────────────┘
-                │  HTTP  /  stdio (MCP)
-                ▼
-┌──────────────────────────────────────────────────────────────┐
-│                     FastAPI application                       │
-│  routes: health · search · semantic · hybrid · graph ·         │
-│          feedback · keys · sources · workspaces · dashboard    │
-│  middleware: auth · rate-limit · tracing · usage-meter         │
-│                                                                │
-│  SearchPipeline  (staged, traced orchestrator)                 │
-│   search → fetch → clean → rank → answer → store → embed → graph│
-│  RetrievalRouter (confidence-routed hybrid retrieval)          │
-│  GraphService · FeedbackService · SourceTrustService · …       │
-└───────────┬───────────────────────┬──────────────────┬────────┘
-            ▼                       ▼                  ▼
-   ┌─────────────────┐      ┌──────────────┐   ┌────────────────┐
-   │ PostgreSQL +    │      │    Redis      │   │  Ollama (LLM)  │
-   │ pgvector        │      │  query cache  │   │  local answer  │
-   │ queries·results·│      │  TTL 1 hr     │   │  synthesis     │
-   │ chunks·edges·   │      └──────────────┘   └────────────────┘
-   │ feedback·traces │
-   └─────────────────┘
-```
+![OLLA Architecture](docs/images/diagramarch.png)
 
 ---
 
