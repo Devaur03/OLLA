@@ -111,6 +111,44 @@ class ChunkService:
         )
         return chunks
 
+    def chunk_hierarchical(self, text: str, parent_size: int = 2000) -> dict:
+        """
+        Parent-child chunking (Phase 10).
+
+        Produces two levels:
+          - parents:  large `parent_size`-char chunks — wide context handed to
+                      the LLM at generation time.
+          - children: small `chunk_size`-char chunks split *within* each parent
+                      — these are what get embedded and retrieved.
+
+        Returns {"parents": [ContentChunk], "children": [{"chunk": ContentChunk,
+        "parent_index": int}]}. Child `chunk_id`s are sequential across the whole
+        document; `parent_index` points into the `parents` list.
+
+        Retrieving a small child gives precise matching; expanding to its parent
+        gives the LLM enough surrounding context to answer coherently.
+        """
+        if not text or not text.strip():
+            return {"parents": [], "children": []}
+
+        parent_chunker = ChunkService(chunk_size=parent_size, overlap=self.overlap)
+        parents = parent_chunker.chunk(text)
+
+        children: list[dict] = []
+        child_id = 0
+        for parent_index, parent in enumerate(parents):
+            for kid in self.chunk(parent.text):
+                children.append({
+                    "chunk": ContentChunk(
+                        chunk_id=child_id,
+                        text=kid.text,
+                        char_count=kid.char_count,
+                    ),
+                    "parent_index": parent_index,
+                })
+                child_id += 1
+        return {"parents": parents, "children": children}
+
     def _split_large_paragraph(self, paragraph: str, start_id: int) -> list[ContentChunk]:
         """
         Fallback: split a paragraph that is larger than chunk_size.

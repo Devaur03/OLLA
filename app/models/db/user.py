@@ -11,6 +11,7 @@ from app.models.db.base import Base
 if TYPE_CHECKING:
     from app.models.db.api_key import ApiKey
     from app.models.db.usage_event import UsageEvent
+    from app.models.db.workspace import Workspace
 
 
 class User(Base):
@@ -36,3 +37,4 @@ class User(Base):
     # Relationships
     api_keys:     Mapped[list["ApiKey"]]     = relationship(back_populates="user", cascade="all, delete-orphan")
     usage_events: Mapped[list["UsageEvent"]] = relationship(back_populates="user")
+    workspaces:   Mapped[list["Workspace"]]  = relationship(back_populates="owner", cascade="all, delete-orphan")

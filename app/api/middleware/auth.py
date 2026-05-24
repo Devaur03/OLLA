@@ -24,6 +24,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import select
 
 from app.config import settings
+from app.models.db.workspace import DEFAULT_WORKSPACE_ID
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,8 @@ async def _lookup_db_key(raw_key: str) -> dict | None:
                     "user_id": user.id,
                     "user_plan": user.plan,
                     "user_email": user.email,
+                    "role": getattr(api_key, "role", "member") or "member",
+                    "workspace_id": getattr(api_key, "workspace_id", DEFAULT_WORKSPACE_ID) or DEFAULT_WORKSPACE_ID,
                 }
     except Exception as e:
         logger.warning("AuthMiddleware: DB key lookup failed: %s", e)
@@ -84,6 +87,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
+
+        # Default workspace context for EVERY request. The static-key and
+        # DB-key branches below override this with the key's own workspace.
+        # Unauthenticated / self-hosted requests keep the Default workspace —
+        # without this, request.state.workspace_id is unset and every
+        # workspace-scoped query/insert sees NULL (breaks feedback, semantic
+        # search, and result storage).
+        request.state.workspace_id = DEFAULT_WORKSPACE_ID
 
         # Always try to resolve user context from X-API-Key header,
         # even when REQUIRE_AUTH=false (so user-scoped routes work).
@@ -97,6 +108,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 request.state.user_id    = "static"
                 request.state.user_plan  = "enterprise"
                 request.state.user_email = ""
+                request.state.api_key_role = "admin"  # static keys = full access
+                request.state.workspace_id = DEFAULT_WORKSPACE_ID
                 return await call_next(request)
 
             # 2. DB-backed keys
@@ -106,6 +119,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 request.state.user_id    = info["user_id"]
                 request.state.user_plan  = info["user_plan"]
                 request.state.user_email = info["user_email"]
+                request.state.api_key_role = info.get("role", "member")
+                request.state.workspace_id = info.get("workspace_id", DEFAULT_WORKSPACE_ID)
                 return await call_next(request)
 
             # Key provided but not valid

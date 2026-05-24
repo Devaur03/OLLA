@@ -14,3 +14,4 @@ uv.lock
 .env.example
 archive/
 logs/
+_verify/

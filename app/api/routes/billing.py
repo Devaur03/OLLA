@@ -204,7 +204,7 @@ async def create_checkout(
         allow_promotion_codes=True,
     )
 
-    logger.info("billing.checkout: created session for user %s → plan %s", user_id, body.plan)
+    logger.info("billing.checkout: created session for user %s -> plan %s", user_id, body.plan)
     return CheckoutResponse(checkout_url=session.url)
 
 
@@ -300,7 +300,7 @@ async def _update_user_plan(
     if sub_id:
         user.stripe_subscription_id = sub_id
     await db.commit()
-    logger.info("billing: updated user %s → plan %s", user_id, plan)
+    logger.info("billing: updated user %s -> plan %s", user_id, plan)
 
 
 _PRICE_TO_PLAN: dict[str, str] = {}   # populated lazily from settings
@@ -336,7 +336,7 @@ async def _sync_subscription(
         user.plan = plan
         user.stripe_subscription_id = subscription.get("id")
         await db.commit()
-        logger.info("billing: synced user %s → plan %s", user.id, plan)
+        logger.info("billing: synced user %s -> plan %s", user.id, plan)
 
 
 def _resolve_plan_from_price(price_id: str) -> str:
@@ -344,5 +344,5 @@ def _resolve_plan_from_price(price_id: str) -> str:
     for plan in ("starter", "pro", "team", "enterprise"):
         if getattr(settings, f"stripe_price_{plan}", None) == price_id:
             return plan
-    logger.warning("billing: unknown price_id %s — defaulting to free", price_id)
+    logger.warning("billing: unknown price_id %s -- defaulting to free", price_id)
     return "free"

@@ -1,0 +1,109 @@
+# Retrieval Benchmark Report
+
+> Generated 2026-05-23 21:13 UTC · 17 queries · Phase 11 evaluation harness
+
+## Headline
+
+- **Latency speedup (web → warm hybrid):** 0.0×
+  (102803 ms → 0 ms mean)
+- **Memory-served rate (warm hybrid):** 0% of queries answered from local memory without a web crawl
+- **Query classification accuracy:** 0%
+
+## Path comparison
+
+| Metric | web (baseline) | hybrid cold | hybrid warm |
+|---|---|---|---|
+| queries ok | 1 | 0 | 0 |
+| latency mean (ms) | 102802.8 | 0.0 | 0.0 |
+| latency p50 (ms) | 102802.8 | 0.0 | 0.0 |
+| latency p95 (ms) | 102802.8 | 0.0 | 0.0 |
+| answer rate | 1.000 | 0.000 | 0.000 |
+| mean results | 5.0 | 0.0 | 0.0 |
+| citation support | 1.000 | 0.000 | 0.000 |
+| precision@k | 0.600 | 0.000 | 0.000 |
+| nDCG@k | 0.618 | 0.000 | 0.000 |
+| MRR | 0.333 | 0.000 | 0.000 |
+
+## Hybrid routing
+
+Retrieval mode chosen (warm run):
+
+
+## Per-query detail
+
+| id | category | web ms | warm ms | mode | from memory | p@k | classified |
+|---|---|---|---|---|---|---|---|
+| def-01 | definition | 102802.8 | 7.8 | - | None | - | - |
+| def-02 | definition | 8.0 | 19.5 | - | None | - | - |
+| def-03 | definition | 12.9 | 6.1 | - | None | - | - |
+| tec-01 | technical | 8.1 | 6.5 | - | None | - | - |
+| tec-02 | technical | 6.4 | 8.3 | - | None | - | - |
+| tec-03 | technical | 9.5 | 4.2 | - | None | - | - |
+| cmp-01 | comparison | 8.4 | 4.6 | - | None | - | - |
+| cmp-02 | comparison | 26.7 | 8.7 | - | None | - | - |
+| evg-01 | evergreen | 5.3 | 8.3 | - | None | - | - |
+| evg-02 | evergreen | 12.4 | 25.6 | - | None | - | - |
+| res-01 | research | 16.6 | 6.6 | - | None | - | - |
+| res-02 | research | 6.4 | 7.7 | - | None | - | - |
+| rec-01 | recent | 4.4 | 9.0 | - | None | - | - |
+| rec-02 | recent | 8.2 | 14.2 | - | None | - | - |
+| rec-03 | recent | 7.6 | 6.1 | - | None | - | - |
+| new-01 | news | 7.5 | 5.3 | - | None | - | - |
+| new-02 | news | 4.8 | 5.8 | - | None | - | - |
+
+## Failures
+
+- `def-01` hybrid_cold: Remote end closed connection without response
+- `def-01` hybrid_warm: Remote end closed connection without response
+- `def-02` web: Remote end closed connection without response
+- `def-02` hybrid_cold: Remote end closed connection without response
+- `def-02` hybrid_warm: cannot reach http://localhost:8000 ([WinError 10053] An established connection was aborted by the software in your host machine)
+- `def-03` web: Remote end closed connection without response
+- `def-03` hybrid_cold: Remote end closed connection without response
+- `def-03` hybrid_warm: Remote end closed connection without response
+- `tec-01` web: Remote end closed connection without response
+- `tec-01` hybrid_cold: Remote end closed connection without response
+- `tec-01` hybrid_warm: Remote end closed connection without response
+- `tec-02` web: Remote end closed connection without response
+- `tec-02` hybrid_cold: Remote end closed connection without response
+- `tec-02` hybrid_warm: Remote end closed connection without response
+- `tec-03` web: Remote end closed connection without response
+- `tec-03` hybrid_cold: Remote end closed connection without response
+- `tec-03` hybrid_warm: Remote end closed connection without response
+- `cmp-01` web: Remote end closed connection without response
+- `cmp-01` hybrid_cold: Remote end closed connection without response
+- `cmp-01` hybrid_warm: Remote end closed connection without response
+- `cmp-02` web: Remote end closed connection without response
+- `cmp-02` hybrid_cold: Remote end closed connection without response
+- `cmp-02` hybrid_warm: Remote end closed connection without response
+- `evg-01` web: Remote end closed connection without response
+- `evg-01` hybrid_cold: Remote end closed connection without response
+- `evg-01` hybrid_warm: Remote end closed connection without response
+- `evg-02` web: Remote end closed connection without response
+- `evg-02` hybrid_cold: Remote end closed connection without response
+- `evg-02` hybrid_warm: Remote end closed connection without response
+- `res-01` web: Remote end closed connection without response
+- `res-01` hybrid_cold: Remote end closed connection without response
+- `res-01` hybrid_warm: Remote end closed connection without response
+- `res-02` web: Remote end closed connection without response
+- `res-02` hybrid_cold: Remote end closed connection without response
+- `res-02` hybrid_warm: Remote end closed connection without response
+- `rec-01` web: Remote end closed connection without response
+- `rec-01` hybrid_cold: Remote end closed connection without response
+- `rec-01` hybrid_warm: Remote end closed connection without response
+- `rec-02` web: Remote end closed connection without response
+- `rec-02` hybrid_cold: Remote end closed connection without response
+- `rec-02` hybrid_warm: cannot reach http://localhost:8000 ([WinError 10053] An established connection was aborted by the software in your host machine)
+- `rec-03` web: Remote end closed connection without response
+- `rec-03` hybrid_cold: Remote end closed connection without response
+- `rec-03` hybrid_warm: Remote end closed connection without response
+- `new-01` web: Remote end closed connection without response
+- `new-01` hybrid_cold: Remote end closed connection without response
+- `new-01` hybrid_warm: Remote end closed connection without response
+- `new-02` web: Remote end closed connection without response
+- `new-02` hybrid_cold: Remote end closed connection without response
+- `new-02` hybrid_warm: Remote end closed connection without response
+
+---
+
+Notes: precision@k / nDCG@k / MRR use domain-level relevance labels from `eval/dataset.py` and are averaged only over labelled queries. Citation support is a vocabulary-overlap heuristic, not a factual-entailment check.

@@ -24,10 +24,11 @@ from app.config import settings
 from app.core.logging.setup import configure_logging
 from app.core.errors.handlers import register_handlers
 from app.api.routes import health, search, semantic, dashboard, graph
-from app.api.routes import keys, billing
+from app.api.routes import keys, billing, hybrid, feedback, admin, sources, workspaces
 from app.api.middleware.auth import AuthMiddleware
 from app.api.middleware.usage_meter import UsageMeterMiddleware
 from app.api.middleware.tracing import RequestTracingMiddleware
+from app.api.middleware.rate_limit import RateLimitMiddleware
 
 configure_logging(json_output=settings.log_json, log_dir="logs")
 logger = logging.getLogger(__name__)
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.add_middleware(RequestTracingMiddleware)
+    app.add_middleware(RateLimitMiddleware)    # reject over-limit before metering
     app.add_middleware(UsageMeterMiddleware)   # reads state set by AuthMiddleware
     app.add_middleware(AuthMiddleware)         # must be innermost so state is set first
 
@@ -65,9 +67,14 @@ def create_app() -> FastAPI:
     app.include_router(health.router,   prefix="/api/v1")
     app.include_router(search.router,   prefix="/api/v1")
     app.include_router(semantic.router, prefix="/api/v1")
+    app.include_router(hybrid.router,   prefix="/api/v1")
+    app.include_router(feedback.router, prefix="/api/v1")
     app.include_router(graph.router,    prefix="/api/v1")
     app.include_router(keys.router)       # prefix defined in router: /api/v1/keys
     app.include_router(billing.router)    # prefix defined in router: /api/v1/billing
+    app.include_router(admin.router)      # prefix defined in router: /api/v1/admin
+    app.include_router(sources.router)    # prefix defined in router: /api/v1/sources
+    app.include_router(workspaces.router)  # prefix defined in router: /api/v1/workspaces
     app.include_router(dashboard.router)  # legacy self-contained UI at /dashboard
 
     # Mount static files and SPA route if frontend/dist exists

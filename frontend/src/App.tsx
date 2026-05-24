@@ -67,8 +67,23 @@ interface HistoryItem {
   count: number;
 }
 
+interface TrustedDomain {
+  domain: string;
+  trust_score: number;
+}
+
+interface InsightsData {
+  total: number;
+  satisfaction_rate: number;
+  by_type: Record<string, number>;
+  by_level: Record<string, number>;
+  best_sources: TrustedDomain[];
+  worst_sources: TrustedDomain[];
+  sources_needing_refresh: { domain: string; outdated_count: number }[];
+}
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'search' | 'keys' | 'billing'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'keys' | 'billing' | 'insights'>('search');
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [mgmtKey, setMgmtKey] = useState<string>(() => localStorage.getItem('mgmt-api-key') || '');
   
@@ -110,6 +125,13 @@ export default function App() {
   const [backfilling, setBackfilling] = useState<boolean>(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
 
+  // Feedback state — tracks which result URLs got feedback this session
+  const [feedbackGiven, setFeedbackGiven] = useState<Record<string, string>>({});
+
+  // Insights tab state — feedback analytics
+  const [insights, setInsights] = useState<InsightsData | null>(null);
+  const [loadingInsights, setLoadingInsights] = useState<boolean>(false);
+
   // Check health on mount and every 30s
   useEffect(() => {
     fetchHealth();
@@ -133,6 +155,13 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('search-history', JSON.stringify(history));
   }, [history]);
+
+  // Load feedback analytics when the Insights tab is opened
+  useEffect(() => {
+    if (activeTab === 'insights') {
+      loadInsights();
+    }
+  }, [activeTab]);
 
   const fetchHealth = async () => {
     try {
@@ -428,6 +457,46 @@ export default function App() {
     }
   };
 
+  // Submit source-level feedback on a result (Phase 6). Source-level feedback
+  // only needs the URL, so it works without per-result IDs in the response.
+  const submitFeedback = async (url: string, feedbackType: string) => {
+    setFeedbackGiven((prev) => ({ ...prev, [url]: feedbackType }));
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (mgmtKey) headers['X-API-Key'] = mgmtKey;
+      await fetch('/api/v1/feedback', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          level: 'source',
+          feedback_type: feedbackType,
+          source_url: url,
+        }),
+      });
+    } catch {
+      /* feedback is best-effort — ignore network errors */
+    }
+  };
+
+  // Load feedback analytics for the Insights tab (Phase 11).
+  const loadInsights = async () => {
+    setLoadingInsights(true);
+    try {
+      const headers: Record<string, string> = {};
+      if (mgmtKey) headers['X-API-Key'] = mgmtKey;
+      const response = await fetch('/api/v1/feedback/stats', { headers });
+      if (response.ok) {
+        setInsights(await response.json());
+      } else {
+        setInsights(null);
+      }
+    } catch {
+      setInsights(null);
+    } finally {
+      setLoadingInsights(false);
+    }
+  };
+
   // Helper to generate curl command string
   const getCurlCmd = (queryText: string) => {
     const isHybrid = searchMode === 'hybrid';
@@ -505,6 +574,16 @@ export default function App() {
           }`}
         >
           💳 Billing & limits
+        </button>
+        <button
+          onClick={() => setActiveTab('insights')}
+          className={`px-5 py-3.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'insights'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-text-muted hover:text-on-surface'
+          }`}
+        >
+          📊 Feedback insights
         </button>
       </div>
 
@@ -660,6 +739,33 @@ export default function App() {
                         <span className="text-[10px] text-text-muted bg-surface-container px-2.5 py-1 rounded">
                           {res.chunk_count} Chunks
                         </span>
+                      </div>
+
+                      {/* Feedback controls — feeds the feedback-aware ranking */}
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border-subtle">
+                        <span className="text-[10px] text-text-muted font-medium">Rate source:</span>
+                        {[
+                          { type: 'useful', label: '👍 Useful' },
+                          { type: 'not_useful', label: '👎 Not useful' },
+                          { type: 'outdated', label: '⏰ Outdated' },
+                        ].map((fb) => (
+                          <button
+                            key={fb.type}
+                            type="button"
+                            onClick={() => submitFeedback(res.url, fb.type)}
+                            disabled={!!feedbackGiven[res.url]}
+                            className={`text-[10px] px-2 py-1 rounded border transition-colors ${
+                              feedbackGiven[res.url] === fb.type
+                                ? 'bg-primary/15 text-primary border-primary/30 font-semibold'
+                                : 'bg-surface-container border-border-subtle text-text-muted hover:text-on-surface disabled:opacity-40'
+                            }`}
+                          >
+                            {fb.label}
+                          </button>
+                        ))}
+                        {feedbackGiven[res.url] && (
+                          <span className="text-[10px] text-primary">✓ Thanks for the feedback</span>
+                        )}
                       </div>
                     </div>
                   ))
@@ -1088,6 +1194,144 @@ export default function App() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        )}
+        {activeTab === 'insights' && (
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="bg-surface border border-border-subtle rounded-xl p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-4 border-b border-border-subtle pb-3">
+                <div>
+                  <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                    Feedback Analytics
+                  </h3>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    How retrieval is performing, learned from collected feedback.
+                  </p>
+                </div>
+                <button
+                  onClick={loadInsights}
+                  disabled={loadingInsights}
+                  className="px-3 py-1.5 bg-surface-container hover:bg-surface-bright border border-border-subtle text-xs font-semibold rounded-lg"
+                >
+                  {loadingInsights ? 'Loading...' : '↻ Refresh'}
+                </button>
+              </div>
+
+              {insights && insights.total > 0 ? (
+                <div className="space-y-5">
+                  {/* Headline stats */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="bg-surface-container border border-border-subtle rounded-lg p-3">
+                      <div className="text-[10px] text-text-muted uppercase tracking-wider">
+                        Total feedback
+                      </div>
+                      <div className="text-xl font-bold text-on-surface">{insights.total}</div>
+                    </div>
+                    <div className="bg-surface-container border border-border-subtle rounded-lg p-3">
+                      <div className="text-[10px] text-text-muted uppercase tracking-wider">
+                        Satisfaction
+                      </div>
+                      <div className="text-xl font-bold text-primary">
+                        {Math.round(insights.satisfaction_rate * 100)}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Breakdown by feedback type */}
+                  {insights.by_type && Object.keys(insights.by_type).length > 0 && (
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-2">
+                        By type
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(insights.by_type).map(([type, n]) => (
+                          <span
+                            key={type}
+                            className="text-[10px] font-mono bg-surface-container border border-border-subtle px-2.5 py-1 rounded text-text-muted"
+                          >
+                            {type}: <span className="text-primary font-bold">{n}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Source trust rankings */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-primary uppercase tracking-wider mb-2">
+                        Top-trust sources
+                      </h4>
+                      <div className="space-y-1.5">
+                        {insights.best_sources && insights.best_sources.length > 0 ? (
+                          insights.best_sources.slice(0, 6).map((s) => (
+                            <div
+                              key={s.domain}
+                              className="flex justify-between text-xs bg-surface-container border border-border-subtle rounded px-2.5 py-1.5"
+                            >
+                              <span className="text-on-surface truncate">{s.domain}</span>
+                              <span className="font-mono text-primary">
+                                {s.trust_score.toFixed(2)}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-xs text-text-muted">No source trust data yet.</div>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-warn uppercase tracking-wider mb-2">
+                        Low-trust sources
+                      </h4>
+                      <div className="space-y-1.5">
+                        {insights.worst_sources && insights.worst_sources.length > 0 ? (
+                          insights.worst_sources.slice(0, 6).map((s) => (
+                            <div
+                              key={s.domain}
+                              className="flex justify-between text-xs bg-surface-container border border-border-subtle rounded px-2.5 py-1.5"
+                            >
+                              <span className="text-on-surface truncate">{s.domain}</span>
+                              <span className="font-mono text-text-muted">
+                                {s.trust_score.toFixed(2)}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-xs text-text-muted">No source trust data yet.</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sources flagged for refresh */}
+                  {insights.sources_needing_refresh &&
+                    insights.sources_needing_refresh.length > 0 && (
+                      <div>
+                        <h4 className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-2">
+                          Flagged for refresh
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {insights.sources_needing_refresh.map((s) => (
+                            <span
+                              key={s.domain}
+                              className="text-[10px] font-mono bg-warn/10 border border-warn/20 text-warn px-2.5 py-1 rounded"
+                            >
+                              {s.domain} ({s.outdated_count})
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-xs text-text-muted">
+                  {loadingInsights
+                    ? 'Loading analytics...'
+                    : 'No feedback recorded yet. Rate sources in the Search tab to build analytics.'}
+                </div>
+              )}
             </div>
           </div>
         )}

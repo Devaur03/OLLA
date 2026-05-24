@@ -35,13 +35,13 @@ from app.services.cache_service import CacheService
 from app.services.chunk_service import ChunkService
 from app.services.citation_service import CitationService
 from app.services.clean_service import CleanService
-from app.services.credibility_service import CredibilityService
 from app.services.entity_service import EntityService
 from app.services.fetch_service import FetchService
 from app.services.graph_service import GraphService
 from app.services.rank_service import RankService
 from app.services.sanitize_service import SanitizeService
 from app.services.search_service import SearchService
+from app.services.source_trust_service import SourceTrustService
 from app.services.store_service import StoreService
 
 logger = logging.getLogger(__name__)
@@ -59,8 +59,9 @@ class PipelineError(Exception):
 class SearchPipeline:
     """Runs a search request through isolated, traced stages."""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, workspace_id: str):
         self.db = db
+        self.workspace_id = workspace_id
         self.traces: list[StageTrace] = []
         self.degraded = False
 
@@ -103,7 +104,9 @@ class SearchPipeline:
 
     # --------------------------------------------------------------- run
 
-    async def run(self, request: SearchRequest) -> SearchResponse:
+    async def run(
+        self, request: SearchRequest, skip_answer: bool = False, skip_store: bool = False
+    ) -> SearchResponse:
         start = time.monotonic()
         search_params = {
             "max_results": request.max_results,
@@ -123,7 +126,7 @@ class SearchPipeline:
             logger.info("Cache HIT for %r", request.query)
             cached["cache_hit"] = True
             return SearchResponse(**cached)
-        logger.info("Cache MISS for %r — running pipeline", request.query)
+        logger.info("Cache MISS for %r -- running pipeline", request.query)
 
         # --- STAGE: search -------------------------------------------------
         candidates = []
@@ -195,11 +198,14 @@ class SearchPipeline:
         final_results: list[SearchResult] = []
         with self._stage("rank") as span:
             ranked = RankService().rank(request.query, processed_results)
-            credibility = CredibilityService()
+            # Blended source trust = static credibility + learned feedback
+            # signal (Phase 7). With no feedback yet it equals the old static
+            # credibility, so existing behaviour is preserved.
+            trust_service = SourceTrustService(self.db, self.workspace_id)
             for r in ranked:
-                cred = credibility.score(r.url)
-                # final = relevance * 0.7 + credibility * 0.3
-                r.score = round((r.score * 0.7) + (cred * 0.3), 4)
+                trust = await trust_service.get_trust(r.url)
+                # final = relevance * 0.7 + source_trust * 0.3
+                r.score = round((r.score * 0.7) + (trust * 0.3), 4)
             ranked.sort(key=lambda r: r.score, reverse=True)
             for pos, r in enumerate(
                 (x for x in ranked if x.score >= request.min_score), start=1
@@ -222,14 +228,20 @@ class SearchPipeline:
         answer_text = ""
         answer_model = ""
         with self._stage("answer") as span:
-            answer_result = await AnswerService().synthesize(request.query, final_results)
-            if answer_result.ok:
-                answer_text = answer_result.answer
-                answer_model = answer_result.model
-                span["detail"] = f"{len(answer_text)} chars via {answer_model}"
-            else:
+            if skip_answer:
                 span["status"] = "skipped"
-                span["detail"] = answer_result.error or "no answer produced"
+                span["detail"] = "skipped by request"
+            else:
+                answer_result = await AnswerService(
+                    model=request.llm_model
+                ).synthesize(request.query, final_results)
+                if answer_result.ok:
+                    answer_text = answer_result.answer
+                    answer_model = answer_result.model
+                    span["detail"] = f"{len(answer_text)} chars via {answer_model}"
+                else:
+                    span["status"] = "skipped"
+                    span["detail"] = answer_result.error or "no answer produced"
 
         elapsed_ms = int((time.monotonic() - start) * 1000)
         response = SearchResponse(
@@ -248,16 +260,23 @@ class SearchPipeline:
         # --- STAGE: store (non-fatal) -------------------------------------
         query_id: str | None = None
         with self._stage("store") as span:
-            store_service = StoreService(self.db)
-            query_id = await store_service.save(
-                query=request.query, params=search_params,
-                results=final_results, processing_ms=elapsed_ms,
-            )
-            span["detail"] = f"query_id={query_id}"
+            if skip_store:
+                span["status"] = "skipped"
+                span["detail"] = "skipped by request"
+            else:
+                store_service = StoreService(self.db, self.workspace_id)
+                query_id = await store_service.save(
+                    query=request.query, params=search_params,
+                    results=final_results, processing_ms=elapsed_ms,
+                )
+                span["detail"] = f"query_id={query_id}"
 
         # --- STAGE: graph (non-fatal, optional) ---------------------------
         with self._stage("graph") as span:
-            if settings.enable_knowledge_graph and query_id:
+            if skip_store:
+                span["status"] = "skipped"
+                span["detail"] = "skipped by request"
+            elif settings.enable_knowledge_graph and query_id:
                 created = await GraphService(self.db).build_edges()
                 span["detail"] = f"{created} edge(s)"
                 if not created:
@@ -274,7 +293,7 @@ class SearchPipeline:
         await cache_service.set(cache_key, response.model_dump())
 
         logger.info(
-            "Search complete: %r → %d results in %dms%s",
+            "Search complete: %r -> %d results in %dms%s",
             request.query, len(final_results), elapsed_ms,
             " (degraded)" if self.degraded else "",
         )

@@ -91,7 +91,7 @@ class CleanService:
         text = self._collapse_whitespace(text)
 
         result = text.strip()
-        logger.debug(f"CleanService: {len(raw)} chars → {len(result)} chars after cleaning")
+        logger.debug(f"CleanService: {len(raw)} chars -> {len(result)} chars after cleaning")
         return result
 
     # --- Private cleaning methods ---
